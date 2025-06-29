@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Menu - JUST_TASTE</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f7f7f7;
+            padding: 40px;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #5a2d82;
+            margin-bottom: 40px;
+        }
+
+        .menu-container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .food-card {
+            background: white;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            border-left: 6px solid #5a2d82;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .food-card:hover {
+            transform: scale(1.02);
+        }
+
+        .food-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .food-desc {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .food-price {
+            font-size: 18px;
+            color: #5a2d82;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Available Menu</h1>
+    <div class="menu-container">
+        {% for item in items %}
+            <div class="food-card">
+                <div class="food-title">{{ item.item_name }}</div>
+                <div class="food-desc">{{ item.item_desc }}</div>
+                <div class="food-price">₹{{ item.item_price }}</div>
+            </div>
+        {% empty %}
+            <p>No food items available.</p>
+        {% endfor %}
+    </div>
+    <!-- Add this below the menu-container div -->
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{% url 'add_customer' %}">
+        <button style="
+            background-color: #5a2d82;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        ">Order</button>
+    </a>
+</div>
+
+</body>
+</html>

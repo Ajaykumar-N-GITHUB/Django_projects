@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JUST_TASTE</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url("/static/homepage.jpg");
+            background-size: cover;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .heading-box {
+            background-color: rgba(0, 0, 0, 0.5); /* black with 50% opacity */
+            padding: 20px 40px;
+            border-radius: 15px;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            color: rgb(231, 227, 235);
+            font-size: 63px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 30px;
+        }
+
+        .button-container a {
+            text-decoration: none;
+            padding: 15px 30px;
+            background-color: rgba(10, 2, 18, 0.8);
+            color: white;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .button-container a:hover {
+            background-color: rgb(4, 1, 7);
+        }
+    </style>
+</head>
+<body>
+    <div class="heading-box">
+        <h1>Welcome to Just Taste!!</h1>
+    </div>
+
+    <div class="button-container">
+        <a href="user/login">Login</a>
+        <a href="user/signup">Signup</a>
+    </div>
+</body>
+</html>

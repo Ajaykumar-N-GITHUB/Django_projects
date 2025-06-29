@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forgot Password - JUST_TASTE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .forgot-container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            width: 350px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .message-box {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .error {
+            color: red;
+            background-color: #ffe5e5;
+            border: 1px solid red;
+        }
+
+        .success {
+            color: green;
+            background-color: #e6ffe6;
+            border: 1px solid green;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #5a2d82;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #3c1e5a;
+        }
+    </style>
+</head>
+<body>
+    <div class="forgot-container">
+        <h2>Forgot Password</h2>
+        <div id="message" class="message-box"></div>
+
+        <form id="forgot-form">
+            <input type="text" name="user_id" placeholder="Enter your User ID" required>
+            <input type="text" name="new_password1" placeholder="Enter new password" required>
+            <input type="text" name="new_password2" placeholder="Re-enter new password" required>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("forgot-form").addEventListener("submit", async function(e) {
+            e.preventDefault(); // prevent form submission
+
+            const form = e.target;
+            const user_id = form.user_id.value;
+            const new_password1 = form.new_password1.value;
+            const new_password2 = form.new_password2.value;
+
+            const response = await fetch("/user/forgot-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify({ user_id, new_password1, new_password2 })
+            });
+
+            const res = await response.json();
+            const messageBox = document.getElementById("message");
+
+            if (response.ok) {
+                messageBox.className = "message-box success";
+                messageBox.innerText = res.message || "Password updated successfully!";
+            } else {
+                messageBox.className = "message-box error";
+                messageBox.innerText = res.message || "Something went wrong!";
+            }
+        });
+
+        function getCSRFToken() {
+            const cookies = document.cookie.split("; ");
+            for (let cookie of cookies) {
+                if (cookie.startsWith("csrftoken=")) {
+                    return cookie.split("=")[1];
+                }
+            }
+            return "";
+        }
+    </script>
+</body>
+</html>

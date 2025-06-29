@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up - Just Taste</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #8e44ad, #c0392b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .signup-form {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            width: 400px;
+        }
+
+        .signup-form h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #8e44ad;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #8e44ad;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background-color: #732d91;
+        }
+    </style>
+</head>
+<body>
+    <form class="signup-form" id="signupForm">
+        <h2>Sign Up</h2>
+
+        <div class="form-group">
+            <label for="user_name">Name</label>
+            <input type="text" id="user_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_mobile">Mobile Number</label>
+            <input type="text" id="user_mobile" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_location">Location</label>
+            <input type="text" id="user_location" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_dob">Date of Birth</label>
+            <input type="date" id="user_dob" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_age">Age</label>
+            <input type="number" id="user_age" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_email">Email</label>
+            <input type="email" id="user_email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_id">User ID</label>
+            <input type="text" id="user_id" required>
+        </div>
+
+        <div class="form-group">
+            <label for="user_passwd">Password</label>
+            <input type="password" id="user_passwd" required>
+        </div>
+
+        <div class="form-group">
+            <label for="check_passwd">Confirm Password</label>
+            <input type="password" id="check_passwd" required>
+        </div>
+
+        <button class="submit-btn" type="submit">Register</button>
+
+        <div style="margin-top: 10px; text-align: center;">
+            <a href="/" style="
+                text-decoration: none;
+                display: inline-block;
+                margin-top: 10px;
+                background-color: #bdc3c7;
+                color: black;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: bold;
+            ">Back to Home</a>
+        </div>
+    </form>
+
+    <!-- ✅ Make sure script tag is closed -->
+    <script>
+        const form = document.getElementById('signupForm');
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const data = {
+                user_name: document.getElementById('user_name').value,
+                user_mobile: document.getElementById('user_mobile').value,
+                user_location: document.getElementById('user_location').value,
+                user_dob: document.getElementById('user_dob').value,
+                user_age: parseInt(document.getElementById('user_age').value),
+                user_email: document.getElementById('user_email').value,
+                user_id: document.getElementById('user_id').value,
+                user_passwd: document.getElementById('user_passwd').value,
+                check_passwd: document.getElementById('check_passwd').value
+            };
+
+            if (data.user_passwd !== data.check_passwd) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            try {
+                const response = await fetch('/user/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    alert(result.error || "Signup failed");
+                } else {
+                    alert(result.message || "User registered successfully!");
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
