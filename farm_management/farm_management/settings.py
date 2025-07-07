@@ -27,10 +27,9 @@ SECRET_KEY = 'django-insecure-a32+^@mpuqz#s!!t5$$-x4#-1@zq29n^sdc-frixtf#+xd66e%
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'mail-sending-app.onrender.com',
+    'farm-management-alxt.onrender.com',
     '127.0.0.1',
     'localhost',
-    'your-app-name.fly.dev',
 
 ]
 
