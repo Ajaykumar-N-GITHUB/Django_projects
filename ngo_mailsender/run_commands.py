@@ -8,6 +8,9 @@ def main():
     django.setup()
 
     try:
+        print("calling static files...")
+        call_command("collectstatic --noinput")
+
         print("📦 Making migrations...")
         call_command('makemigrations')
 
