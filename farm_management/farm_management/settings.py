@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +26,13 @@ SECRET_KEY = 'django-insecure-a32+^@mpuqz#s!!t5$$-x4#-1@zq29n^sdc-frixtf#+xd66e%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'mail-sending-app.onrender.com',
+    '127.0.0.1',
+    'localhost',
+    'your-app-name.fly.dev',
+
+]
 
 
 # Application definition
@@ -81,17 +88,21 @@ WSGI_APPLICATION = 'farm_management.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'database2_farm_managemant',
-        'USER': 'root',
-        'PASSWORD': '@j@yAK1234567',
-        'HOST': 'localhost',     
-        'PORT': '3306',          
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'farming',
+        'USER': 'farmer',
+        'PASSWORD': 'farmer@2025',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+# DATABASES = {
+#     'default': dj_database_url.parse(
+#         os.environ.get("DATABASE_URL")
+#     )
+# }
+
 
 
 # Password validation
@@ -132,10 +143,16 @@ STATIC_URL = '/static/'
 
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'webApp', 'static'),
+    os.path.join(BASE_DIR, 'webApp/static'),
 ]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

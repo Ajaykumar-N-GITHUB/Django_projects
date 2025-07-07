@@ -7,7 +7,7 @@ from account.models import Customer
 
 class Login(APIView):
     def get(self,request,format=None):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/login.html')
+        return render(request, 'login.html')
 
     def post(self, request, format=None):
         user = Customer.objects.filter(user_id=request.data['user_id']).first()
@@ -22,7 +22,7 @@ class Login(APIView):
 
 class Signup(APIView):
     def get(self, request, format=None):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/signup.html')
+        return render(request, 'signup.html')
 
     def post(self, request, format=None):
         res = signup_service(request.data)
@@ -34,7 +34,7 @@ class Signup(APIView):
 
 class Resetpassword(APIView):
     def get(self, request, format=None):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/forget_password.html')
+        return render(request, 'forget_password.html')
 
     def post(self, request, format=None):
         res = reset_password_service(request.data)
@@ -47,12 +47,12 @@ class Resetpassword(APIView):
 
 class About(APIView):
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/aboutus.html')
+        return render(request, 'aboutus.html')
 
 
 class Contact(APIView):
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/contact.html')
+        return render(request, 'contact.html')
     
     def post(self, request):
         res = email_sender(request.data)

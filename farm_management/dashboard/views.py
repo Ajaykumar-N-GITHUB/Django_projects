@@ -16,7 +16,7 @@ class Dashboard(APIView):
             'user_name': user_id,
             'weather_data': weather_data
             }
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/dashboard.html', context)
+        return render(request, 'dashboard.html', context)
    
 
 

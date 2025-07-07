@@ -194,7 +194,7 @@ def future_expenses(data):
                     'amount': 1000,
                     'reason': "Human wages"
                 })
-            elif record.item_name in ['poultry', 'cow', 'goat', 'sheep', 'pig','horse','duck','turkey','fish','hen']:
+            elif record.item_name in ['poultry', 'cow', 'goat', 'sheep', 'pig','horse','duck','turkey','fish','hen','cows','goats','buffalo','buffaloes']:
                 record_list.append({
                     'investment': record.item_name,
                     'amount': 1000,
