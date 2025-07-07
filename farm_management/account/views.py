@@ -1,0 +1,59 @@
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from django.shortcuts import render
+from account.services import email_sender, signup_service, login_service, reset_password_service
+from account.models import Customer
+
+class Login(APIView):
+    def get(self,request,format=None):
+        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/login.html')
+
+    def post(self, request, format=None):
+        user = Customer.objects.filter(user_id=request.data['user_id']).first()
+        if user:
+            request.session['user_id'] = user.user_id
+        res = login_service(request.data)
+        if res is True:
+            return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class Signup(APIView):
+    def get(self, request, format=None):
+        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/signup.html')
+
+    def post(self, request, format=None):
+        res = signup_service(request.data)
+        if res is True:
+            return Response({"message": "User Created successfully"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Resetpassword(APIView):
+    def get(self, request, format=None):
+        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/forget_password.html')
+
+    def post(self, request, format=None):
+        res = reset_password_service(request.data)
+        if res is True:
+            return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
+        else:
+            print(res)
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class About(APIView):
+    def get(self, request):
+        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/aboutus.html')
+
+
+class Contact(APIView):
+    def get(self, request):
+        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/farm_management/webApp/contact.html')
+    
+    def post(self, request):
+        res = email_sender(request.data)
+        return res

@@ -52,7 +52,7 @@ def reset_password(data):
         if data['new_password1'] == data['new_password2'] and len(data['new_password1']) >= 8:
             user.user_passwd = make_password(data['new_password1'])
             user.save()
-            return Response({"message": "Password Reset successfully"}, status=status.HTTP_200_OK)
+            return True
         else:
             return Response({"message": "New password and confirm password do not match or are too short"}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:

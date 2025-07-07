@@ -18,5 +18,3 @@ class FoodItem(models.Model):
         db_table = "food_details"
 
 
-
-        # item_owner_name = models.CharField(max_length=200, blank=False)
