@@ -9,10 +9,12 @@ def main():
 
     try:
         print("calling static files...")
-        call_command("collectstatic --noinput")
+        call_command("collectstatic", interactive=False, verbosity=0)
 
         print("📦 Making migrations...")
-        call_command('makemigrations')
+        call_command('makemigrations', 'account')
+        call_command('makemigrations', 'mailapp')
+
 
         print("📂 Applying migrations...")
         call_command('migrate')
