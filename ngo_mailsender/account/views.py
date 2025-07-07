@@ -7,12 +7,12 @@ from rest_framework import status
 
 class AboutView(APIView):
     def get(self, request):
-        return render(None, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/ngo_mailsender/webApp/about.html')
+        return render(None, 'about.html')
     
 
 class ContactView(APIView):
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/ngo_mailsender/webApp/contact.html')
+        return render(request, 'contact.html')
     
     def post(self, request):
         res = email_sender_service(request.data)
@@ -21,7 +21,7 @@ class ContactView(APIView):
 
 class LoginView(APIView):
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/ngo_mailsender/webApp/login.html')
+        return render(request, 'login.html')
     
     def post(self, request, format=None):
         user = UserDetails.objects.filter(user_id=request.data['user_id']).first()
@@ -38,7 +38,7 @@ class LoginView(APIView):
 
 class SignupView(APIView):
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/ngo_mailsender/webApp/signup.html')
+        return render(request, 'signup.html')
     
     def post(self, request, format=None):
         res = signup_service(request.data)

@@ -10,7 +10,7 @@ from rest_framework import status
 class DisplayView(APIView):
 
     def get(self, request):
-        return render(request, '/Users/ajaykumar-n/Documents/DJANGO/Django_projects/ngo_mailsender/webApp/display.html')
+        return render(request, 'display.html')
 
     def post(self, request):
         res = mail_service(request)
