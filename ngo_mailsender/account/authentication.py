@@ -43,5 +43,5 @@ def reset_password(data):
             return True
         else:
             return "New password and confirm password are too short pls assign a 8 character password"
-    except user.DoesNotExist:
+    except Exception as e:
         return "User not found"

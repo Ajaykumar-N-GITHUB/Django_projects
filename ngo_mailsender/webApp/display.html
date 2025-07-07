@@ -89,15 +89,27 @@
         <form id="dirForm" enctype="multipart/form-data">
             <input type="text" name="subject" placeholder="📌 Subject for Mail" required>
             <input type="text" name="chief_guest" placeholder="🎤 Chief Guest Name" required>
-            <input type ="text" name="session_name" placeholder="📅 Session Name" required>
+            <input type="text" name="session_name" placeholder="📅 Session Name" required>
             <input type="file" id="directory" name="files" webkitdirectory directory multiple required>
             <br>
             <button type="submit">⬆️ Upload Folder</button>
         </form>
+
+        <!-- Logout Section -->
+        <div style="margin-top: 40px;">
+            <form id="logoutForm" method="get">
+                <button type="submit"
+                    style="padding: 10px 20px; background-color: #ff5e5e; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer;">
+                    🔓 Logout
+                </button>
+            </form>
+        </div>
+
         <div id="message"></div>
     </div>
 
     <script>
+        // Upload Form Script
         const form = document.getElementById('dirForm');
         const message = document.getElementById('message');
 
@@ -128,6 +140,36 @@
             } catch (error) {
                 message.className = 'error';
                 message.textContent = '❌ Network error. Please try again.';
+            }
+        });
+
+        // Logout Form Script
+        const logoutForm = document.getElementById('logoutForm');
+
+        logoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            message.style.display = 'block';
+            message.className = '';
+            message.textContent = '🚪 Logging out...';
+
+            try {
+                const response = await fetch('/project/signout', {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    // If your logout returns HTML (e.g., a thank-you page)
+                    const html = await response.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
+                } else {
+                    message.className = 'error';
+                    message.textContent = '❌ Logout failed. Please try again.';
+                }
+            } catch (error) {
+                message.className = 'error';
+                message.textContent = '❌ Network error during logout.';
             }
         });
     </script>

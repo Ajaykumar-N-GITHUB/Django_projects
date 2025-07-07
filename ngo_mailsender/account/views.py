@@ -5,6 +5,9 @@ from account.models import UserDetails
 from rest_framework.response import Response
 from rest_framework import status
 
+
+
+
 class AboutView(APIView):
     def get(self, request):
         return render(None, 'about.html')
@@ -35,6 +38,12 @@ class LoginView(APIView):
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
         
 
+class LogoutView(APIView):
+    def get(self, request):
+        if 'user_id' in request.session:
+            del request.session['user_id']
+        return render(request, 'logout.html')
+    
 
 class SignupView(APIView):
     def get(self, request):
@@ -48,3 +57,22 @@ class SignupView(APIView):
         else:
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
         
+
+
+
+
+class ResetpasswordView(APIView):
+    def get(self, request, format=None):
+        return render(request, 'forget_password.html')
+
+    def post(self, request, format=None):
+        res = reset_password_service(request.data)
+        if res is True:
+            return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
+        else:
+            print(res)
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    

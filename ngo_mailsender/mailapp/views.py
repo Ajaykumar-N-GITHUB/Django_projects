@@ -15,6 +15,6 @@ class DisplayView(APIView):
     def post(self, request):
         res = mail_service(request)
         if res is True:
-            return Response({"message": "Upload Successful"}, status=status.HTTP_200_OK)
+            return Response({"message": "Mail Sent Successfuly"}, status=status.HTTP_200_OK)
         else:
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
