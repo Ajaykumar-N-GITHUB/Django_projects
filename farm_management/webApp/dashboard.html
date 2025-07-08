@@ -232,6 +232,18 @@
             </div>
 
         </div>
+        <!-- Logout Section -->
+        <div style="margin-top: 40px;">
+            <form id="logoutForm" method="get">
+                <button type="submit"
+                    style="padding: 10px 20px; background-color: #ff5e5e; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer;">
+                    🔓 Logout
+                </button>
+            </form>
+        </div>
+
+        <div id="message"></div>
+    </div>
     </div>
 
 </body>
@@ -499,7 +511,7 @@
                 'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
-                type: reportType 
+                type: reportType
             })
         })
             .then(res => {
@@ -517,6 +529,37 @@
                 alert("Failed to download the report.");
             });
     }
+
+    // Logout Form Script
+        const logoutForm = document.getElementById('logoutForm');
+
+        logoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            message.style.display = 'block';
+            message.className = '';
+            message.textContent = '🚪 Logging out...';
+
+            try {
+                const response = await fetch('/project/signout', {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    // If your logout returns HTML (e.g., a thank-you page)
+                    const html = await response.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
+                } else {
+                    message.className = 'error';
+                    message.textContent = '❌ Logout failed. Please try again.';
+                }
+            } catch (error) {
+                message.className = 'error';
+                message.textContent = '❌ Network error during logout.';
+            }
+        });
+
 </script>
 
 

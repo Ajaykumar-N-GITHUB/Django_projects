@@ -57,3 +57,9 @@ class Contact(APIView):
     def post(self, request):
         res = email_sender(request.data)
         return res
+    
+class Logout(APIView):
+    def get(self, request):
+        if 'user_id' in request.session:
+            del request.session['user_id']
+        return render(request, 'logout.html')
