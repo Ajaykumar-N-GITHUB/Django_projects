@@ -1,0 +1,697 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <meta charset="UTF-8">
+    <title>Farm Management Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6f9;
+        }
+
+        header {
+            background-color: #2e8b57;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-gap: 20px;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ccc;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        .chart-container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .chart {
+            flex: 1;
+            height: 250px;
+            background-color: #eef2f5;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            margin-top: 10px;
+            background-color: #2e8b57;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .reminder-form,
+        .record-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .weather {
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        🌾 Farm Management Dashboard - Welcome, <span style="color: #ffd700;">{{ user_name }}</span>
+    </header>
+
+    <div class="dashboard">
+
+        <!-- Left Panel -->
+        <div>
+
+            <!-- Add Record Form -->
+            <form class="record-form" id="recordForm">
+                {% csrf_token %}
+                <select name="record_type" required>
+                    <option value="Investment">Investment</option>
+                    <option value="Harvest">Harvest</option>
+                </select>
+                <input type="text" name="item_name" placeholder="Item Name" required />
+                <input type="number" name="amount" placeholder="Amount" required />
+                <input type="date" name="record_date" required />
+                <button class="btn" type="submit">Add</button>
+            </form>
+
+            <br>
+            <br>
+
+            <!-- Current Investment Table -->
+            <div class="card">
+                <div class="section-title">Current Investment</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item/Activity</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Remove</th>
+                            <th>Edit</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="investment-table-body">
+                        <tr>
+                            <td colspan="4">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <br>
+            <br>
+            <!-- Future Expenses -->
+            <div class="card">
+                <div class="section-title">Future Expenses Per Month Based on your Investment</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Reason</th>
+                            <th>Estimated Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="future-expenses-body">
+                        <tr>
+                            <td colspan="2">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <br>
+            <br>
+            <!-- Add Reminder -->
+            <div class="card">
+                <div class="section-title">Add Reminder<br><b>You Can Add 1 Reminder For a Date</b></div>
+                <form class="reminder-form" id="reminderForm">
+                    {% csrf_token %}
+                    <input type="text" id="reminderMessage" placeholder="Reminder message" required />
+                    <input type="datetime-local" id="reminderDate" required />
+                    <button class="btn" type="submit">Set Reminder</button>
+                </form>
+            </div>
+
+
+        </div>
+
+        <!-- Right Panel -->
+        <div>
+
+            <!-- Weather -->
+            <div class="card">
+                <div class="section-title">🌦️ Today's Weather</div>
+                <div class="weather">
+                    Location: <strong>{{ weather_data.Location|default:"NA" }}</strong><br>
+                    Temp: {{ weather_data.Temp|default:"NA" }}°C<br>
+                    Humidity: {{ weather_data.Humidity|default:"NA" }}%<br>
+                    Condition: {{ weather_data.Condition|default:"NA" }}<br>
+                    Wind: {{ weather_data.Wind|default:"NA" }} km/h<br>
+                    Cloud: {{ weather_data.Cloud|default:"NA" }}%
+                </div>
+            </div>
+            <br>
+            <!-- Profit / Loss -->
+            <div class="card">
+                <div class="section-title">Total Profit / Loss</div>
+                <div id="profit-loss-display" style="font-size: 20px;">Loading...</div>
+            </div>
+            <br>
+            <!-- Report Download -->
+            <div class="card">
+                <div class="section-title">📄 Download Reports</div>
+                <button class="btn" onclick="downloadReport('month')">Download Monthly Report</button>
+                <button class="btn" onclick="downloadReport('year')">Download Yearly Report</button>
+            </div>
+            <br>
+
+            <!-- Charts -->>
+            <br>
+
+            <div class="chart-container">
+                <div class="chart">
+                    <canvas id="pieChart" width="200" height="200"></canvas>
+                </div>
+                <div class="chart">
+                    <canvas id="barChart" width="200" height="200"></canvas>
+                </div>
+            </div>
+            <br>
+            <!-- Add Worker -->
+            <div class="card">
+                <div class="section-title">👨‍🌾 Add Worker</div>
+                <form class="worker-form" id="addWorkerForm">
+                    {% csrf_token %}
+                    <input type="text" name="worker_id" placeholder="User Name" required />
+                    <input type="text" name="worker_passwd" placeholder="User Password" required />
+                    <input type="tel" name="worker_phone_number" placeholder="Phone Number" required />
+                    <button class="btn" type="submit">Add Worker</button>
+                </form>
+            </div>
+            <br>
+
+            <!-- Remove Worker -->
+            <div class="card">
+                <div class="section-title">❌ Remove Worker</div>
+                <form class="worker-form" id="removeWorkerForm">
+                    {% csrf_token %}
+                    <input type="text" name="worker_id" placeholder="User Name" required />
+                    <button class="btn" type="submit" style="background-color:#ff5e5e;">Remove Worker</button>
+                </form>
+            </div>
+
+        </div>
+        <!-- Logout Section -->
+        <div style="margin-top: 40px;">
+            <form id="logoutForm" method="get">
+                <button type="submit"
+                    style="padding: 10px 20px; background-color: #ff5e5e; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer;">
+                    🔓 Logout
+                </button>
+            </form>
+        </div>
+
+        <div id="message"></div>
+    </div>
+    </div>
+
+</body>
+
+<!-- JS Section -->
+<script>
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    async function loadRecords() {
+        const tableBody = document.getElementById('investment-table-body');
+        tableBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+        try {
+            const response = await fetch('/dashboard/fetch_records');
+            const data = await response.json();
+            tableBody.innerHTML = '';
+
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+            <td>${record.item_name}</td>
+            <td>₹${record.amount}</td>
+            <td>${record.date}</td>
+            <td><button class="btn" onclick="removeRecord('${record.id}', '${record.item_name}', '${record.amount}', this)">Remove</button></td>
+            <td><button class="btn" onclick="editRecord('${record.id}', '${record.item_name}', '${record.amount}', '${record.date}')">Edit</button></td>
+          `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="4">No records available.</td></tr>';
+            }
+        } catch (err) {
+            tableBody.innerHTML = '<tr><td colspan="4">Error loading data</td></tr>';
+        }
+    }
+
+    async function removeRecord(id, item_name, amount, button) {
+        try {
+            const response = await fetch('/dashboard/remove_record', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ id, item_name, amount })
+            });
+
+            if (response.status === 204) {
+                alert("✅ Record deleted successfully.");
+                loadRecords();  // reload table
+            } else {
+                const data = await response.json();
+                alert(data.error || "❌ Failed to delete.");
+            }
+        } catch (err) {
+            alert("❌ Network error while deleting.");
+        }
+    }
+
+    async function editRecord(id, oldItemName, oldAmount, oldDate) {
+        const newItemName = prompt("Edit item name:", oldItemName);
+        if (newItemName === null) return;
+
+        const newAmount = prompt("Edit amount:", oldAmount);
+        if (newAmount === null) return;
+
+        const newDate = prompt("Edit date (YYYY-MM-DD):", oldDate);
+        if (newDate === null) return;
+
+        try {
+            const response = await fetch('/dashboard/update_record', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    id,
+                    item_name: newItemName,
+                    amount: newAmount,
+                    date: newDate
+                })
+            });
+
+            if (response.ok) {
+                alert("✅ Record updated successfully.");
+                loadRecords();  // reload table
+            } else {
+                const data = await response.json();
+                alert(data.error || "❌ Failed to update.");
+            }
+        } catch (err) {
+            alert("❌ Network error while updating.");
+        }
+    }
+
+
+    async function loadProfitLoss() {
+        try {
+            const res = await fetch('/dashboard/profit_loss', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+            });
+
+            const data = await res.json();
+            const display = document.getElementById('profit-loss-display');
+
+            const profit = data.data?.profit_loss;
+            if (profit > 0) {
+                display.innerText = `Profit: ₹${profit}`;
+                display.style.color = 'green';
+            } else if (profit < 0) {
+                display.innerText = `Loss: ₹${profit}`;
+                display.style.color = 'red';
+            } else {
+                display.innerText = 'NA';
+            }
+        } catch (err) {
+            document.getElementById('profit-loss-display').innerText = 'Error fetching data';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadRecords();
+        loadProfitLoss();
+
+        const form = document.getElementById('recordForm');
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/dashboard/add_record', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    alert(result.message || "✅ Record added.");
+                    form.reset();
+                    loadRecords();
+                    loadProfitLoss();
+                } else {
+                    alert(result.error || "❌ Failed to add.");
+                }
+            } catch (err) {
+                alert("❌ Network error.");
+            }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const reminderForm = document.getElementById("reminderForm");
+        reminderForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const message = document.getElementById("reminderMessage").value.trim();
+            const date = document.getElementById("reminderDate").value;
+
+            if (!message || !date) {
+                alert("❌ Please fill out both fields.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/dashboard/set_reminder", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        datetime: date
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message || "✅ Reminder set successfully.");
+                    reminderForm.reset();
+                } else {
+                    alert(result.error || "❌ Failed to set reminder.");
+                }
+            } catch (error) {
+                alert("❌ Network error while setting reminder.");
+                console.error(error);
+            }
+        });
+    });
+
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('/dashboard/pie_bar')
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                const investment = data.data.total_investment;
+                const harvest = data.data.total_profit;
+                const profit = data.data.profit_loss;
+
+                // Pie Chart: Investment vs Harvest
+                const pieCtx = document.getElementById('pieChart').getContext('2d');
+                new Chart(pieCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Investment', 'Harvest'],
+                        datasets: [{
+                            data: [investment, harvest],
+                            backgroundColor: ['#FF6384', '#36A2EB'],
+                            borderWidth: 1
+                        }]
+                    }
+                });
+
+                // Bar Chart: Investment, Harvest, Profit
+                const barCtx = document.getElementById('barChart').getContext('2d');
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Investment', 'Harvest', 'Profit'],
+                        datasets: [{
+                            label: 'Farm Financials',
+                            data: [investment, harvest, profit],
+                            backgroundColor: ['#FF6384', '#36A2EB', '#4CAF50'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error loading chart data:", error);
+            });
+    });
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        // Get CSRF token from template
+        const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+        // Add Worker
+        document.getElementById("addWorkerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const res = await fetch("/dashboard/add_worker", {
+                    method: "POST",
+                    headers: { "X-CSRFToken": csrfToken },
+                    body: formData
+                });
+
+                const data = await res.json();
+                console.log("Add Worker Response:", res);
+                if (res.ok) {
+                    alert(data.message || "✅ Worker added successfully.");
+                    e.target.reset();
+                } else {
+                    alert(data.error || "❌ Failed to add worker.");
+                }
+            } catch (err) {
+                alert("❌ Network error while adding worker.");
+            }
+        });
+
+        // Remove Worker
+        document.getElementById("removeWorkerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+    
+            try {
+                const res = await fetch("/dashboard/remove_worker", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: formData
+                });
+                console.log(res.status, res.ok)
+                console.log("Remove Worker Response:", res);
+                
+                if (res.ok) {
+                    alert("✅ Worker removed successfully.");
+                    e.target.reset();
+                } else {
+                    alert("❌ Failed to remove worker.");
+                }
+            } catch (err) {
+                alert("❌ Network error while removing worker.");
+            }
+        });
+
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch('/dashboard/future_expenses', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('future-expenses-body');
+                tbody.innerHTML = '';
+                console.log(data);
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                        <td>${item.investment}</td>
+                        <td>${item.reason}</td>
+                        <td>₹${item.amount}</td>
+                    `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="2">No future expenses available.</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching future expenses:', error);
+                const tbody = document.getElementById('future-expenses-body');
+                tbody.innerHTML = '<tr><td colspan="2">Error loading data</td></tr>';
+            });
+    });
+</script>
+
+
+<script>
+    function downloadReport(reportType) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch('/dashboard/report_download', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                type: reportType
+            })
+        })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error("Failed to fetch report");
+                }
+                return res.blob();
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            })
+            .catch(err => {
+                console.error(`${reportType} report download failed:`, err);
+                alert("Failed to download the report.");
+            });
+    }
+
+    // Logout Form Script
+    const logoutForm = document.getElementById('logoutForm');
+
+    logoutForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        message.style.display = 'block';
+        message.className = '';
+        message.textContent = '🚪 Logging out...';
+
+        try {
+            const response = await fetch('/project/signout', {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                // If your logout returns HTML (e.g., a thank-you page)
+                const html = await response.text();
+                document.open();
+                document.write(html);
+                document.close();
+            } else {
+                message.className = 'error';
+                message.textContent = '❌ Logout failed. Please try again.';
+            }
+        } catch (error) {
+            message.className = 'error';
+            message.textContent = '❌ Network error during logout.';
+        }
+    });
+
+</script>
+
+
+</html>

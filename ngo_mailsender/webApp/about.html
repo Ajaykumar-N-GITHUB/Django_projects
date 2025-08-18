@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About Us - Farm Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .about-container {
+            max-width: 900px;
+            margin: 80px auto;
+            background: white;
+            padding: 50px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .about-container h2 {
+            font-size: 36px;
+            color: #2b2b2b;
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .about-container h2::after {
+            content: "";
+            display: block;
+            width: 60px;
+            height: 4px;
+            background-color: #28a745;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .about-container p {
+            font-size: 17px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .about-container strong {
+            color: #222;
+        }
+
+        @media (max-width: 600px) {
+            .about-container {
+                padding: 30px 20px;
+                margin: 40px 20px;
+            }
+
+            .about-container h2 {
+                font-size: 28px;
+            }
+
+            .about-container p {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="about-container">
+    <h2>About Us</h2>
+
+   <p>
+    Alzheimer’s and Related Disorders Society of India-Coimbatore Chapter (ARDSI-CC) is an NGO dedicated to raising awareness, providing support, and enhancing the quality of life for individuals affected by Alzheimer's Disease and their families. Our Coimbatore Chapter is part of the National Alzheimer's and Related Disorders Society of India (ARDSI), which is committed to addressing the challenges posed by Dementia in our community.
+    </p>
+
+    <p>
+        ARDSI envisions a society that is understanding and supportive of individuals with dementia. Together, we can create an environment that promotes inclusivity and compassion.
+        </p>
+
+    <p>
+        <b>Our Objectives</b><br>
+        </p>
+        <ul>
+        <li>To give support, succor, help, and information to families of persons affected by dementia.</li>
+        <li>To initiate and encourage the formation of chapters of the society, support groups, and dementia care centers throughout India.</li>
+        <li>To secure from governmental and non-governmental sources better facilities for care of those affected by dementia.</li>
+        <li>To undertake and support research into the causes, prevalence, and other aspects of Alzheimer’s and other forms of dementia.</li>
+        <li>To bring to the attention of governmental agencies the needs of people with dementia, including recognition of dementia as a handicap of the elderly.</li>
+        </ul>
+    </div>
+
+</body>
+</html>

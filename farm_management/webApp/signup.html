@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Signup - Farm Customer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+        }
+
+        body {
+            background: url("/static/second.jpg") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 50px 20px;
+            color: #fff;
+        }
+
+        .signup-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00bcd4;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input,
+        textarea {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #000;
+        }
+
+        button {
+            background-color: #00bcd4;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0097a7;
+            transform: scale(1.02);
+        }
+
+        #response-message {
+            margin-top: 20px;
+            display: none;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .info {
+            background-color: #ffc107;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="signup-container">
+        <h2>Customer Signup</h2>
+        <form id="signupForm">
+            {% csrf_token %}
+            <label for="name">Full Name</label>
+            <input type="text" name="name" required>
+           
+            <label for="email">Email Address</label>
+            <input type="email" name="email" required>
+
+            <label for="phone_number">Phone Number</label>
+            <input type="text" name="phone_number" required>
+
+            <label for="address">Address</label>
+            <textarea name="address" rows="3"></textarea>
+
+            <label for="state">State</label>
+            <input type="text" name="state" required>
+
+            <label for="district">District</label>
+            <input type="text" name="district" required>
+
+            <label for="town">Town</label>
+            <input type="text" name="town" required>
+
+            <label for="farm_size">Farm Size (in acres)</label>
+            <input type="number" step="0.01" name="farm_size">
+
+            <label for="user_id">User ID</label>
+            <input type="text" name="user_id" required>
+
+            <label for="password">Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Sign Up</button>
+        </form>
+
+        <div id="response-message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('signupForm');
+        const responseBox = document.getElementById('response-message');
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            responseBox.style.display = "block";
+            responseBox.className = "info";
+            responseBox.textContent = "⏳ Creating account...";
+
+            const formData = new FormData(form);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch("/user/signup", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.status === 201 || response.status === 200) {
+                    responseBox.className = "success";
+                    responseBox.textContent = result.message || "✅ Signup successful!";
+                    form.reset();
+                } else {
+                    responseBox.className = "error";
+                    responseBox.textContent = result.error || "❌ Signup failed.";
+                }
+            } catch (err) {
+                responseBox.className = "error";
+                responseBox.textContent = "❌ Network error. Please try again.";
+            }
+        });
+    </script>
+
+</body>
+
+</html>

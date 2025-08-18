@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Farm Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        body {
+            background: url("/static/second.jpg") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            color: #fff;
+        }
+
+        .login-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00bcd4;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #000;
+        }
+
+        button {
+            background-color: #00bcd4;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0097a7;
+            transform: scale(1.03);
+        }
+
+        .forgot-link {
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
+
+        .forgot-link a {
+            color: #ffc107;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-link a:hover {
+            text-decoration: underline;
+        }
+
+        #response-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .info {
+            background-color: #ffc107;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Customer/Worker Login</h2>
+        <form id="loginForm">
+            {% csrf_token %}
+            <label for="user_id">User ID</label>
+            <input type="text" name="user_id" required>
+
+            <label for="password">Password</label>
+            <input type="password" name="password" required>
+
+            <div class="forgot-link">
+                <a href="/user/resetpass">Forgot Password?</a>
+            </div>
+
+            <button type="submit">Login</button>
+        </form>
+
+        <div id="response-message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const responseBox = document.getElementById('response-message');
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            responseBox.style.display = "block";
+            responseBox.className = "info";
+            responseBox.textContent = "🔐 Logging in...";
+
+            const formData = new FormData(form);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch("/user/login", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.status === 200) {
+                    responseBox.className = "message";
+                    responseBox.textContent = result.message || "✅ Login successful!";
+                    window.open("/dashboard/display", "_blank"); // opens in new tab
+                    // You can redirect here if needed
+                    // window.location.href = "/dashboard";
+                } else {
+                    responseBox.className = "error";
+                    responseBox.textContent = result.error || "❌ Login failed. Check credentials.";
+                }
+            } catch (err) {
+                responseBox.className = "error";
+                responseBox.textContent = "❌ Network error. Please try again.";
+            }
+        });
+    </script>
+</body>
+
+</html>

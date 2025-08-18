@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Farm Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: url("/static/first.jpg") no-repeat center center/cover;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.3));
+            backdrop-filter: blur(4px);
+            z-index: 1;
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .heading-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 50px 60px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        h1 {
+            font-size: 56px;
+            color: #fff;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+
+        .subheading {
+            font-size: 20px;
+            color: #e0e0e0;
+            font-weight: 300;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            animation: fadeInUp 1.5s ease-out;
+        }
+
+        .button-container a {
+            text-decoration: none;
+            padding: 14px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .button-container a:hover {
+            background-color: #fff;
+            color: #000;
+            transform: scale(1.07);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .heading-box {
+                padding: 30px 20px;
+            }
+
+            .button-container a {
+                font-size: 16px;
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-content">
+        <div class="heading-box">
+            <h1>Welcome To FARM MANAGEMENT SYSTEM</h1>
+            <p class="subheading">Smarter decisions. Better farming. Easier management.</p>
+        </div>
+
+        <div class="button-container">
+            <a href="/project/about">About Us</a>
+            <a href="/project/contact">Contact</a>
+            <a href="/user/login">Login</a>
+            <a href="/user/signup">Sign Up</a>
+        </div>
+    </div>
+</body>
+
+</html>

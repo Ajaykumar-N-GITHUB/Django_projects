@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Input for Investment</title>
+  <style>
+    body {
+      background-color: #f0fff0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 600px;
+      max-width: 90%;
+      border: 2px solid #a0e6a0;
+    }
+    h1 {
+      color: #0a5f0a;
+      font-size: 28px;
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      color: #1b6b1b;
+      display: block;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    select, textarea, button {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    select {
+      background-color: #30d158;
+      color: white;
+      font-weight: bold;
+    }
+    textarea {
+      background-color: #eaffea;
+      color: #333;
+      resize: none;
+      height: 100px;
+    }
+    button {
+      background-color: #1caa4b;
+      color: white;
+      font-weight: bold;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #178f3e;
+    }
+    .clear-btn {
+      background-color: #ff4d4d;
+      margin-top: 10px;
+    }
+    .clear-btn:hover {
+      background-color: #cc0000;
+    }
+    .status {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Voice Input for Investment</h1>
+
+    <label for="language">Choose Your Language:</label>
+    <select id="language">
+      <option value="ta-IN">🟠 Tamil</option>
+      <option value="en-IN">🟢 English</option>
+    </select>
+
+    <button id="micButton">🎤 Start Recording</button>
+    <div id="status" class="status"></div>
+
+    <label for="transcribedText">Transcribed Text:</label>
+    <textarea id="transcribedText" readonly></textarea>
+
+    <button id="submitButton">✅ Submit to Owner</button>
+    <button id="clearButton" class="clear-btn">🧹 Clear</button>
+  </div>
+
+  <script>
+    const micButton = document.getElementById('micButton');
+    const submitButton = document.getElementById('submitButton');
+    const clearButton = document.getElementById('clearButton');
+    const languageSelector = document.getElementById('language');
+    const transcribedText = document.getElementById('transcribedText');
+    const statusDiv = document.getElementById('status');
+
+    let recognition;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;   // keep listening
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micButton.textContent = '🔴 Stop Recording';
+        statusDiv.textContent = '🎧 Listening...';
+        statusDiv.style.color = 'green';
+      };
+
+      recognition.onend = () => {
+        if (isRecording) {
+          recognition.start(); // restart automatically if still recording
+        } else {
+          micButton.textContent = '🎤 Start Recording';
+          statusDiv.textContent = '✅ Recording Stopped';
+          statusDiv.style.color = 'black';
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript + ' ';
+        }
+        transcribedText.value += transcript.trim() + '\n';
+        statusDiv.textContent = '✅ Captured speech... still listening';
+      };
+
+      recognition.onerror = (event) => {
+        statusDiv.textContent = '❌ Error: ' + event.error;
+        statusDiv.style.color = 'red';
+        isRecording = false;
+        micButton.textContent = '🎤 Start Recording';
+      };
+
+      micButton.addEventListener('click', () => {
+        if (!isRecording) {
+          recognition.lang = languageSelector.value;
+          recognition.start();
+        } else {
+          isRecording = false;   // stop loop
+          recognition.stop();
+        }
+      });
+    } else {
+      micButton.disabled = true;
+      micButton.textContent = '❌ Speech Recognition Not Supported';
+      alert('Your browser does not support speech recognition.');
+    }
+
+    submitButton.addEventListener('click', async () => {
+      const transcript = transcribedText.value.trim();
+      if (!transcript) {
+        alert('⚠️ Please record your voice before submitting.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/dashboard/worker_input', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({
+            language: languageSelector.value,
+            transcript: transcript
+          })
+        });
+
+        if (response.ok) {
+          alert('✅ Submitted successfully!');
+          transcribedText.value = '';
+        } else {
+          alert('❌ This sentence does not fit into Investment or Harvest categories. Please try again.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('❌ Error occurred while submitting audio.');
+      }
+    });
+
+    // Clear button logic
+    clearButton.addEventListener('click', () => {
+      transcribedText.value = '';
+      statusDiv.textContent = '🧹 Cleared';
+      statusDiv.style.color = 'gray';
+    });
+  </script>
+</body>
+</html>

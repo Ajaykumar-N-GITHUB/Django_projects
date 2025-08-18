@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Order Food</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 40px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            text-align: center;
+            color: #5a2d82;
+        }
+
+        form {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .food-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .food-name {
+            flex: 2;
+        }
+
+        .quantity-input {
+            flex: 1;
+            padding: 5px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #5a2d82;
+            color: white;
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Place Your Order</h1>
+    <form method="POST" action="{% url 'add_customer' %}">
+        {% csrf_token %}
+
+        <label>Customer Name:</label>
+        <input type="text" name="cust_name" required>
+
+        <label>Mobile Number:</label>
+        <input type="text" name="mob_num" required>
+
+        <label>Date of Birth:</label>
+        <input type="date" name="dob" required>
+
+        <label>Tips (Optional):</label>
+        <input type="number" name="tip" min="0" step="1" placeholder="Enter tip amount">
+
+        <hr><br>
+        <h3>Choose Items & Quantity</h3>
+
+        <div class="food-entry">
+            <div class="food-name">Bun Butter Jam</div>
+            <input class="quantity-input" type="number" name="Bun Butter Jam" min="0" placeholder="Qty">
+        </div>
+
+        <div class="food-entry">
+            <div class="food-name">French Fires</div>
+            <input class="quantity-input" type="number" name="French Fires" min="0" placeholder="Qty">
+        </div>
+
+        <div class="food-entry">
+            <div class="food-name">Oreo Milkshake</div>
+            <input class="quantity-input" type="number" name="Oreo Milkshake" min="0" placeholder="Qty">
+        </div>
+
+        <div class="food-entry">
+            <div class="food-name">Mango Milkshake</div>
+            <input class="quantity-input" type="number" name="Mango Milkshake" min="0" placeholder="Qty">
+        </div>
+
+        <div class="food-entry">
+            <div class="food-name">Chocolatey Milkshake</div>
+            <input class="quantity-input" type="number" name="Chocolatey Milkshake" min="0" placeholder="Qty">
+        </div>
+
+        <div class="food-entry">
+            <div class="food-name">Grilled Sandwhich</div>
+            <input class="quantity-input" type="number" name="Grilled Sandwhich" min="0" placeholder="Qty">
+        </div>
+
+        <div style="text-align:center; margin-top: 30px;">
+            <button type="submit">Proceed</button>
+        </div>
+    </form>
+
+    <!-- JavaScript at the end -->
+    <script>
+        document.querySelector('form').addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const payload = {
+                cust_name: formData.get("cust_name"),
+                mob_num: parseInt(formData.get("mob_num")),
+                dob: formData.get("dob"),
+                tip: parseInt(formData.get("tip")) || 0,
+                food_items: {}
+            };
+
+            // List of food item input names
+            const foodItems = [
+                "Bun Butter Jam",
+                "French Fires",
+                "Oreo Milkshake",
+                "Mango Milkshake",
+                "Chocolatey Milkshake",
+                "Grilled Sandwhich"
+            ];
+
+            foodItems.forEach(item => {
+                const qty = formData.get(item);
+                if (qty && parseInt(qty) > 0) {
+                    payload.food_items[item] = parseInt(qty);
+                }
+            });
+            fetch(form.action, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+                },
+                body: JSON.stringify(payload)
+            })
+                .then(async response => {
+                    const data = await response.json();
+
+                    if (response.ok && data.customer_id) {
+                        alert("Order submitted successfully");
+                        if (response.ok && data.customer_id) {
+                            // Step 1: Prepare the payload
+                            const billPayload = {
+                                customer_name_id: data.customer_id
+                            };
+
+                            // Step 2: Call /bill/download API and get the PDF
+                            fetch("/bill/download", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+                                },
+                                body: JSON.stringify(billPayload)
+                            })
+                                .then(async pdfResponse => {
+                                    if (!pdfResponse.ok) {
+                                        const errorData = await pdfResponse.json();
+                                        alert(errorData.message || "Failed to download bill.");
+                                        return;
+                                    }
+
+                                    // Step 3: Convert PDF Blob and open in new tab
+                                    return pdfResponse.blob();
+                                })
+                                .then(blob => {
+                                    if (blob) {
+                                        const url = URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                    }
+                                })
+                                .catch(err => {
+                                    alert("Error downloading bill: " + err.message);
+                                });
+                        }
+
+                    } else {
+                        // Catch known error message or generic fallback
+                        alert(data.message || "Something went wrong. Please try again.");
+                    }
+                })
+                .catch(err => {
+                    alert("Network error occurred. Please check your connection.");
+                });
+
+
+
+        });
+    </script>
+</body>
+
+</html>

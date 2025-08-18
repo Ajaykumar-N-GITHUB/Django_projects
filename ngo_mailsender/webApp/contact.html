@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us - Farm Management</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: url("/static/first.jpg") no-repeat center center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .contact-container {
+            background: #030802e6;
+            backdrop-filter: blur(12px);
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            color: white;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px;
+            background: rgb(66, 201, 243);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #message-box {
+            margin-top: 20px;
+            padding: 12px;
+            display: none;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        #message-box.info {
+            background: #ffc107;
+            color: black;
+        }
+
+        #message-box.success {
+            background: #28a745;
+            color: white;
+        }
+
+        #message-box.error {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="contact-container">
+    <h2>Contact Support</h2>
+    <form id="contactForm">
+        {% csrf_token %}
+        <label for="name">Name</label>
+        <input type="text" name="name" required>
+
+        <label for="email">Email</label>
+        <input type="email" name="email" required>
+
+        <label for="message">Message</label>
+        <textarea name="message" required></textarea>
+
+        <button type="submit">Send</button>
+    </form>
+
+    <div id="message-box"></div>
+</div>
+
+<script>
+    const form = document.getElementById("contactForm");
+    const messageBox = document.getElementById("message-box");
+
+    form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        // Show waiting message
+        messageBox.style.display = "block";
+        messageBox.className = "info";
+        messageBox.textContent = "⏳ Please wait... Sending email...";
+
+        const formData = new FormData(form);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            const response = await fetch("/project/contact", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.status === 201) {
+                messageBox.className = "success";
+                messageBox.textContent = result.message || "✅ Email sent successfully.";
+                form.reset();
+            } else {
+                messageBox.className = "error";
+                messageBox.textContent = result.error || "❌ Something went wrong.";
+            }
+
+        } catch (error) {
+            messageBox.className = "error";
+            messageBox.textContent = "❌ Network error. Please try again.";
+        }
+    });
+</script>
+
+</body>
+</html>
