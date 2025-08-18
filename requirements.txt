@@ -65,7 +65,8 @@ MarkupSafe==3.0.2
 mdurl==0.1.2
 multidict==6.6.0
 murmurhash==1.0.13
-mysqlclient==2.2.7
+# mysqlclient==2.2.7
+PyMySQL==1.1.1
 numpy==2.3.2
 openai==1.99.6
 packaging==25.0
