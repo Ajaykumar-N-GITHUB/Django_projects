@@ -15,5 +15,4 @@ urlpatterns = [
     path('pie_bar', PieBarView.as_view(), name = 'pie_bar'),
     path('future_expenses', FutureExpensesView.as_view(), name='future_expenses'),
     path('report_download', ReportDownloadView.as_view(), name='report_download'),
-    
 ]
