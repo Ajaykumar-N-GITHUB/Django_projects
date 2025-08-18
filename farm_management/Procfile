@@ -1,2 +1,2 @@
 release: python manage.py migrate
-web: gunicorn farm_management.wsgi --bind 0.0.0.0:$PORT
+web: gunicorn farm_management.wsgi:application --bind 0.0.0.0:$PORT
