@@ -27,6 +27,7 @@ from reportlab.lib import colors
 from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 )
+from dashboard.models import AddRecord
 import spacy
 from pathlib import Path
 import requests
@@ -37,7 +38,6 @@ import google.generativeai as genai
 
 genai_apikey = os.environ.get("genai_key")
 subscription_key = os.environ.get("azure_key")
-
 
 
 
@@ -144,7 +144,10 @@ def add_worker(data):
             worker = Worker()
             worker.worker_id = data['worker_id']
             worker.worker_passwd = data['worker_passwd']
-            worker.phone_number = data['worker_phone_number']
+            if data['worker_phone_number'] and len(data['worker_phone_number']) >= 10:
+                worker.phone_number = data['worker_phone_number']
+            else:
+                return "Invalid phone number. Please provide a valid 10-digit phone number."
             worker.owner = user
             worker.save()
             return True
@@ -238,8 +241,9 @@ def send_reminder(user_id):
         print(user_id)
         user = Customer.objects.get(user_id=user_id)
         sender_email = "ajayjothika17@gmail.com"
-        sender_password = "vqco nkjm crzr ymta"
+        sender_password = "herp ioyd scad tvgl"
         receiver_email = user.email
+        print(receiver_email)
         subject = "Reminder from Farm Management"
         today_date = timezone.localtime(timezone.now()).date()
         print(today_date)
@@ -256,54 +260,28 @@ def send_reminder(user_id):
         message.attach(MIMEText(body, 'plain'))
         
         reminder_date = Reminder.objects.filter(user=user, date = today_date).first().date
-        try:
-            if today_date == reminder_date:
+
+        if today_date == reminder_date:
+            try:
+                print("Sending reminder email...")
                 server = smtplib.SMTP('smtp.gmail.com', 587)
+                # server.set_debuglevel(1)
                 server.starttls() 
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, receiver_email, message.as_string())
+                print("Reminder email sent successfully")
                 return True
 
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return str(e)
 
-        finally:
-            server.quit()
+            finally:
+                server.quit()
 
     except Exception as e:
         print("Error while setting reminder:", e)
         return str(e)
     
-
-def future_expenses(data):
-    try:
-        record_list = []
-        user = Customer.objects.get(user_id=data['user_id'])
-        records = AddRecord.objects.filter(farm_owner=user, type='Investment')
-        prediction_list = []
-
-        for record in records:
-            item = record.item_name
-            if item not in label_encoder.classes_:
-                continue  # skip unseen items
-            
-            item_encoded = label_encoder.transform([item])[0]
-            month = record.date.month if record.date else datetime.now().month
-            predicted_amount = model.predict([[item_encoded, month]])[0]
-
-            prediction_list.append({
-                'investment': item,
-                'amount': round(predicted_amount, 2),
-                'reason': "AI Predicted"
-            })
-
-        return prediction_list
-        
-    except Exception as e:
-        print("Error while calculating future expenses:", e)
-        return str(e)
-    
-
 
 def report_download(data):
     report_type = data.get('type')
@@ -435,6 +413,71 @@ def detect_and_translate(text):
 
     return (result[0]['translations'][0]['text'])
 
+
+def future_expenses(data):
+    try:
+        sentences = []
+        
+        # Fetch investment items
+        item_list = AddRecord.objects.filter(
+            farm_owner_id=data['user_id'], 
+            type='Investment'
+        ).values('item_name')
+
+        for i in item_list:
+            sentences.append(i['item_name'])
+
+        genai.configure(api_key=genai_apikey)
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
+
+        prompt = f"""
+        You are an assistant that extracts structured farming expenses. 
+        The input is a list of investment activities. 
+        Analyze deeply and give FUTURE EXPENSE predictions for each activity. 
+
+        Always return ONLY valid JSON.  
+        Format:
+        [
+            {{
+                "investment": "<string>",
+                "amount": <number>,
+                "reason": "<string>"
+            }}
+        ]
+
+        Rules:
+        - "investment" = the activity/item (e.g., "cow bought", "paddy planting").
+        - "amount" = numeric value only (strip ₹, Rs, INR, commas, k, lakhs).
+        - "amount" = estimate average future expense (maintenance, feeding, labor, etc.), 
+          NOT purchase cost.
+        - "reason" = explain briefly why this expense is expected.
+        - No text outside JSON.
+
+        Input:
+        {sentences}
+
+        JSON:
+        """
+
+        response = model.generate_content(prompt)
+        raw_text = response.text.strip()
+
+        clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+
+        try:
+            parsed = json.loads(clean_text)
+
+            if isinstance(parsed, dict):
+                parsed = [parsed]
+
+            return parsed
+        except json.JSONDecodeError:
+            print("JSON decode failed. Returning raw:", clean_text)
+            return "Given input is not valid"
+
+    except Exception as e:
+        print("Error occurred while processing future expenses:", e)
+        return "Error occurred while processing future expenses"
 
 
 def detect_type(sentence):

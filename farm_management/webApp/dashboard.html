@@ -23,9 +23,24 @@
             background-color: #2e8b57;
             padding: 20px;
             color: white;
-            text-align: center;
             font-size: 24px;
             font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            padding: 8px 15px;
+            background-color: #ff5e5e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
         }
 
         .dashboard {
@@ -114,7 +129,16 @@
 <body>
 
     <header>
-        🌾 Farm Management Dashboard - Welcome, <span style="color: #ffd700;">{{ user_name }}</span>
+        <div>
+            🌾 Farm Management Dashboard - Welcome,
+            <span style="color: #ffd700;">{{ user_name }}</span>
+        </div>
+
+        <!-- Logout Button -->
+        <form id="logoutForm" method="get">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">🔓 Logout</button>
+        </form>
     </header>
 
     <div class="dashboard">
@@ -149,12 +173,11 @@
                             <th>Date</th>
                             <th>Remove</th>
                             <th>Edit</th>
-
                         </tr>
                     </thead>
                     <tbody id="investment-table-body">
                         <tr>
-                            <td colspan="4">Loading...</td>
+                            <td colspan="5">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -164,7 +187,7 @@
             <br>
             <!-- Future Expenses -->
             <div class="card">
-                <div class="section-title">Future Expenses Per Month Based on your Investment</div>
+                <div class="section-title">Future Expenses You May Incur Based on Your Investments</div>
                 <table>
                     <thead>
                         <tr>
@@ -175,7 +198,7 @@
                     </thead>
                     <tbody id="future-expenses-body">
                         <tr>
-                            <td colspan="2">Loading...</td>
+                            <td colspan="3">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -193,8 +216,6 @@
                     <button class="btn" type="submit">Set Reminder</button>
                 </form>
             </div>
-
-
         </div>
 
         <!-- Right Panel -->
@@ -227,9 +248,7 @@
             </div>
             <br>
 
-            <!-- Charts -->>
-            <br>
-
+            <!-- Charts -->
             <div class="chart-container">
                 <div class="chart">
                     <canvas id="pieChart" width="200" height="200"></canvas>
@@ -261,25 +280,47 @@
                     <button class="btn" type="submit" style="background-color:#ff5e5e;">Remove Worker</button>
                 </form>
             </div>
-
-        </div>
-        <!-- Logout Section -->
-        <div style="margin-top: 40px;">
-            <form id="logoutForm" method="get">
-                <button type="submit"
-                    style="padding: 10px 20px; background-color: #ff5e5e; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer;">
-                    🔓 Logout
-                </button>
-            </form>
         </div>
 
         <div id="message"></div>
-    </div>
     </div>
 
 </body>
 
 <!-- JS Section -->
+<script>
+    // Logout Form Script
+    const logout_Form = document.getElementById('logoutForm');
+    const message = document.getElementById('message');
+
+    logoutForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        message.style.display = 'block';
+        message.className = '';
+        message.textContent = '🚪 Logging out...';
+
+        try {
+            const response = await fetch('/project/signout', {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const html = await response.text();
+                document.open();
+                document.write(html);
+                document.close();
+            } else {
+                message.className = 'error';
+                message.textContent = '❌ Logout failed. Please try again.';
+            }
+        } catch (error) {
+            message.className = 'error';
+            message.textContent = '❌ Network error during logout.';
+        }
+    });
+</script>
+
+
 <script>
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
@@ -566,7 +607,7 @@
         document.getElementById("removeWorkerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-    
+
             try {
                 const res = await fetch("/dashboard/remove_worker", {
                     method: "POST",
@@ -577,7 +618,7 @@
                 });
                 console.log(res.status, res.ok)
                 console.log("Remove Worker Response:", res);
-                
+
                 if (res.ok) {
                     alert("✅ Worker removed successfully.");
                     e.target.reset();
@@ -661,36 +702,7 @@
             });
     }
 
-    // Logout Form Script
-    const logoutForm = document.getElementById('logoutForm');
-
-    logoutForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        message.style.display = 'block';
-        message.className = '';
-        message.textContent = '🚪 Logging out...';
-
-        try {
-            const response = await fetch('/project/signout', {
-                method: 'GET'
-            });
-
-            if (response.ok) {
-                // If your logout returns HTML (e.g., a thank-you page)
-                const html = await response.text();
-                document.open();
-                document.write(html);
-                document.close();
-            } else {
-                message.className = 'error';
-                message.textContent = '❌ Logout failed. Please try again.';
-            }
-        } catch (error) {
-            message.className = 'error';
-            message.textContent = '❌ Network error during logout.';
-        }
-    });
-
+   
 </script>
 
 

@@ -25,7 +25,14 @@ class AddRecord(models.Model):
 
 
 class Reminder(models.Model):
-    user = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='reminder_user', default=None, blank=False)
+    user = models.ForeignKey(
+        Customer, 
+        on_delete=models.CASCADE, 
+        related_name='reminder_user',
+        to_field='user_id',
+        db_column='owner_id',
+        default=None, 
+        blank=False)
     message = models.TextField(blank=False)
     date = models.DateField(blank=False)
     time = models.TimeField(blank=False)

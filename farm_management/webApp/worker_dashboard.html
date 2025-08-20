@@ -7,13 +7,53 @@
     body {
       background-color: #f0fff0;
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 🔝 Top navigation bar */
+    .navbar {
+      width: 100%;
+      background-color: #1caa4b;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    .navbar h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    .logout-btn {
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      width: 200px;   
+    }
+    .logout-btn:hover {
+      background-color: #cc0000;
+    }
+
+    /* Main container */
+    .container {
+      flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
+      padding: 20px;
     }
-    .container {
+    .card {
       background-color: #ffffff;
       padding: 30px;
       border-radius: 20px;
@@ -34,7 +74,8 @@
       margin-top: 20px;
       margin-bottom: 10px;
     }
-    select, textarea, button {
+    /* ✅ Only form buttons are full width, not logout */
+    select, textarea, .card button {
       width: 100%;
       padding: 15px;
       border-radius: 12px;
@@ -53,7 +94,7 @@
       resize: none;
       height: 100px;
     }
-    button {
+    .card button {
       background-color: #1caa4b;
       color: white;
       font-weight: bold;
@@ -61,7 +102,7 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    button:hover {
+    .card button:hover {
       background-color: #178f3e;
     }
     .clear-btn {
@@ -79,29 +120,39 @@
   </style>
 </head>
 <body>
+  <!-- 🔝 Navbar with Logout -->
+  <div class="navbar">
+    <h2>Farm Management</h2>
+    <button id="logoutButton" class="logout-btn">🚪 Logout</button>
+  </div>
+
+  <!-- 🎤 Voice Input Card -->
   <div class="container">
-    <h1>🎤 Voice Input for Investment</h1>
+    <div class="card">
+      <h1>🎤 Voice Input for Investment</h1>
 
-    <label for="language">Choose Your Language:</label>
-    <select id="language">
-      <option value="ta-IN">🟠 Tamil</option>
-      <option value="en-IN">🟢 English</option>
-    </select>
+      <label for="language">Choose Your Language:</label>
+      <select id="language">
+        <option value="ta-IN">🟠 Tamil</option>
+        <option value="en-IN">🟢 English</option>
+      </select>
 
-    <button id="micButton">🎤 Start Recording</button>
-    <div id="status" class="status"></div>
+      <button id="micButton">🎤 Start Recording</button>
+      <div id="status" class="status"></div>
 
-    <label for="transcribedText">Transcribed Text:</label>
-    <textarea id="transcribedText" readonly></textarea>
+      <label for="transcribedText">Transcribed Text:</label>
+      <textarea id="transcribedText" readonly></textarea>
 
-    <button id="submitButton">✅ Submit to Owner</button>
-    <button id="clearButton" class="clear-btn">🧹 Clear</button>
+      <button id="submitButton">✅ Submit to Owner</button>
+      <button id="clearButton" class="clear-btn">🧹 Clear</button>
+    </div>
   </div>
 
   <script>
     const micButton = document.getElementById('micButton');
     const submitButton = document.getElementById('submitButton');
     const clearButton = document.getElementById('clearButton');
+    const logoutButton = document.getElementById('logoutButton');
     const languageSelector = document.getElementById('language');
     const transcribedText = document.getElementById('transcribedText');
     const statusDiv = document.getElementById('status');
@@ -111,7 +162,7 @@
 
     if ('webkitSpeechRecognition' in window) {
       recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;   // keep listening
+      recognition.continuous = true;
       recognition.interimResults = false;
 
       recognition.onstart = () => {
@@ -123,7 +174,7 @@
 
       recognition.onend = () => {
         if (isRecording) {
-          recognition.start(); // restart automatically if still recording
+          recognition.start();
         } else {
           micButton.textContent = '🎤 Start Recording';
           statusDiv.textContent = '✅ Recording Stopped';
@@ -152,7 +203,7 @@
           recognition.lang = languageSelector.value;
           recognition.start();
         } else {
-          isRecording = false;   // stop loop
+          isRecording = false;
           recognition.stop();
         }
       });
@@ -194,11 +245,24 @@
       }
     });
 
-    // Clear button logic
     clearButton.addEventListener('click', () => {
       transcribedText.value = '';
       statusDiv.textContent = '🧹 Cleared';
       statusDiv.style.color = 'gray';
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/project/signout', { method: 'GET' });
+        if (response.ok) {
+          window.location.href = '/'; // redirect to home/login
+        } else {
+          alert('❌ Logout failed. Try again.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('❌ Error during logout.');
+      }
     });
   </script>
 </body>

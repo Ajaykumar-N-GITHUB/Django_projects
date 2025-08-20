@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.response import Response
 from rest_framework import status
 from dashboard.record_operations import send_reminder
-
+from account.sendemail import alert_email, welcome_email
 
 
 def signup_user(data):
@@ -28,6 +28,7 @@ def signup_user(data):
                 return "Password must be at least 8 characters long"
             print("hello")
             customer_obj.save()
+            res = welcome_email(data)
             return True
     except Exception as e:
         return str(e)   
@@ -41,7 +42,8 @@ def login_user(data):
         if user_id.endswith('_owner'):
             user = Customer.objects.get(user_id = data['user_id'])
             if check_password(data['password'], user.password):
-                send_reminder(data['user_id'])
+                res = send_reminder(data['user_id'])
+                resp = alert_email(data)
                 return True
             else:
                 return "Please check the credentials"

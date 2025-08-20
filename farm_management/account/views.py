@@ -14,14 +14,15 @@ class Login(APIView):
         user = Customer.objects.filter(user_id=request.data['user_id']).first()
         if user:
             request.session['user_id'] = user.user_id
+            res = login_service(request.data)
         else:
             worker = Worker.objects.filter(worker_id=request.data['user_id']).first()
             if worker:
                 request.session['user_id'] = worker.worker_id
+                res = login_service(request.data)
             else:
                 return Response({"error": "User Not Found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        res = login_service(request.data)
         if res is True:
             return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
         else:
