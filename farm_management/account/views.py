@@ -72,3 +72,7 @@ class Logout(APIView):
         if 'user_id' in request.session:
             del request.session['user_id']
         return render(request, 'logout.html')
+
+class Readme(APIView):
+    def get(self, request):
+        return render(request, 'readme.html')

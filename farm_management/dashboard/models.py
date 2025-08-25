@@ -41,3 +41,24 @@ class Reminder(models.Model):
 
     class Meta:
         db_table = "reminder_list"
+
+
+
+class TaskLog(models.Model):
+    worker_id = models.CharField(max_length=100, blank=False, default=None)
+    user = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='task_logs',
+        to_field='user_id',
+        db_column='user_id',
+        default=None,
+        blank=False
+    )
+    action = models.CharField(max_length=100000, blank=False)
+    date = models.DateField(blank=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+
+    class Meta:
+        db_table = "task_logs"

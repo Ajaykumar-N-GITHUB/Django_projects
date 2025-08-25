@@ -169,6 +169,7 @@
                     <thead>
                         <tr>
                             <th>Item/Activity</th>
+                            <th>Harvest/Investment</th>
                             <th>Amount</th>
                             <th>Date</th>
                             <th>Remove</th>
@@ -182,6 +183,7 @@
                     </tbody>
                 </table>
             </div>
+
 
             <br>
             <br>
@@ -216,6 +218,7 @@
                     <button class="btn" type="submit">Set Reminder</button>
                 </form>
             </div>
+
         </div>
 
         <!-- Right Panel -->
@@ -242,12 +245,34 @@
             <br>
             <!-- Report Download -->
             <div class="card">
-                <div class="section-title">📄 Download Reports</div>
+                <div class="section-title">📄 Download ExpenseReports</div>
                 <button class="btn" onclick="downloadReport('month')">Download Monthly Report</button>
                 <button class="btn" onclick="downloadReport('year')">Download Yearly Report</button>
             </div>
             <br>
 
+            <div class="card">
+            <div class="section-title">📄 Worker Log Report</div>
+            <form id="reportForm" method="POST" action="/dashboard/get-report">
+                {% csrf_token %}
+                <input type="text" name="worker_id" placeholder="User Name" required />
+
+                <label for="report_type">Select Report:</label>
+                <select name="report_type">
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+
+                <button class="btn" type="submit" style="background-color:#ff5e5e;">Worker Report</button>
+            </form>
+
+            <!-- Result will appear here -->
+            <div id="reportResult" style="margin-top: 15px; font-weight: bold; color: green;"></div>
+            </div>
+            <br>
+            <br>
             <!-- Charts -->
             <div class="chart-container">
                 <div class="chart">
@@ -288,7 +313,7 @@
 </body>
 
 <!-- JS Section -->
-<script>
+<script> 
     // Logout Form Script
     const logout_Form = document.getElementById('logoutForm');
     const message = document.getElementById('message');
@@ -338,6 +363,7 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
             <td>${record.item_name}</td>
+            <td>${record.type}</td>
             <td>₹${record.amount}</td>
             <td>${record.date}</td>
             <td><button class="btn" onclick="removeRecord('${record.id}', '${record.item_name}', '${record.amount}', this)">Remove</button></td>
@@ -630,6 +656,50 @@
             }
         });
 
+        document.getElementById("reportForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: formData
+                });
+
+                if (response.status == 404) {
+                    alert("❌ No logs found for this worker. Please try with a different worker.");
+                    return;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to generate report");
+                }
+
+                // Handle PDF download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "worker_report.pdf";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                alert("✅ Report generated successfully!");
+
+            } catch (error) {
+                alert("⚠️ Error: " + error.message);
+            }
+        });
+
     });
 </script>
 
@@ -702,8 +772,7 @@
             });
     }
 
-   
-</script>
 
+</script>
 
 </html>

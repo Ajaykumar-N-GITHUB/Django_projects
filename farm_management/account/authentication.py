@@ -10,6 +10,10 @@ def signup_user(data):
     try:
         if Customer.objects.filter(user_id=data['user_id']).exists():
             return "User Id already exists. Please choose a different one"
+        if Customer.objects.filter(email=data['email']).exists():
+            return "Email already exists. Please choose a different one"
+        if Customer.objects.filter(phone_number=data['phone_number']).exists():
+            return "Phone number already exists. Please choose a different one"
         else:
             customer_obj = Customer()
             customer_obj.name = data['name']
@@ -20,7 +24,10 @@ def signup_user(data):
             customer_obj.state = data['state']
             customer_obj.district = data['district']
             customer_obj.farm_size = data['farm_size']
-            customer_obj.user_id = data['user_id']
+            if data['user_id'].endswith('_owner'):
+                customer_obj.user_id = data['user_id']
+            else:
+                return "User ID must end with '_owner'"
             if data['password'] and len(data['password']) >= 8:
                 hashed_password = make_password(data['password'])
                 customer_obj.password = hashed_password
@@ -42,7 +49,7 @@ def login_user(data):
         if user_id.endswith('_owner'):
             user = Customer.objects.get(user_id = data['user_id'])
             if check_password(data['password'], user.password):
-                res = send_reminder(data['user_id'])
+                res = send_reminder()
                 resp = alert_email(data)
                 return True
             else:

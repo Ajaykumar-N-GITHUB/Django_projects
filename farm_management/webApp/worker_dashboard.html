@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <title>Voice Input for Investment</title>
+  <title>Worker Dashboard</title>
   <style>
     body {
       background-color: #f0fff0;
@@ -14,7 +15,7 @@
       flex-direction: column;
     }
 
-    /* 🔝 Top navigation bar */
+    /* 🔝 Navbar */
     .navbar {
       width: 100%;
       background-color: #1caa4b;
@@ -25,11 +26,13 @@
       align-items: center;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
+
     .navbar h2 {
       margin: 0;
       font-size: 22px;
       font-weight: bold;
     }
+
     .logout-btn {
       background-color: #ff4d4d;
       color: white;
@@ -38,35 +41,42 @@
       font-size: 14px;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s;
-      width: 200px;   
+      width: 200px;
     }
+
     .logout-btn:hover {
       background-color: #cc0000;
     }
 
-    /* Main container */
+    /* 📦 Container with side-by-side cards */
     .container {
       flex-grow: 1;
       display: flex;
+      flex-direction: row;
       justify-content: center;
-      align-items: center;
+      align-items: stretch;
       padding: 20px;
+      gap: 25px;
     }
+
     .card {
       background-color: #ffffff;
       padding: 30px;
       border-radius: 20px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      width: 600px;
-      max-width: 90%;
+      flex: 1;
+      max-width: 500px;
       border: 2px solid #a0e6a0;
+      display: flex;
+      flex-direction: column;
     }
+
     h1 {
       color: #0a5f0a;
-      font-size: 28px;
+      font-size: 24px;
       text-align: center;
     }
+
     label {
       font-weight: bold;
       color: #1b6b1b;
@@ -74,8 +84,10 @@
       margin-top: 20px;
       margin-bottom: 10px;
     }
-    /* ✅ Only form buttons are full width, not logout */
-    select, textarea, .card button {
+
+    select,
+    textarea,
+    .card button {
       width: 100%;
       padding: 15px;
       border-radius: 12px;
@@ -83,51 +95,67 @@
       font-size: 16px;
       box-sizing: border-box;
     }
+
     select {
       background-color: #30d158;
       color: white;
       font-weight: bold;
     }
+
     textarea {
       background-color: #eaffea;
       color: #333;
       resize: none;
       height: 100px;
     }
+
     .card button {
       background-color: #1caa4b;
       color: white;
       font-weight: bold;
       margin-top: 20px;
       cursor: pointer;
-      transition: background-color 0.3s;
     }
+
     .card button:hover {
       background-color: #178f3e;
     }
-    .clear-btn {
-      background-color: #ff4d4d;
+
+    .reset-btn {
+      background-color: #ffa500;
       margin-top: 10px;
     }
-    .clear-btn:hover {
-      background-color: #cc0000;
+
+    .reset-btn:hover {
+      background-color: #cc8400;
     }
+
     .status {
       text-align: center;
-      font-size: 20px;
+      font-size: 18px;
       margin-top: 10px;
+    }
+
+    /* 📱 Responsive for small screens */
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
 </head>
+
 <body>
-  <!-- 🔝 Navbar with Logout -->
+  <!-- 🔝 Navbar -->
   <div class="navbar">
     <h2>Farm Management</h2>
     <button id="logoutButton" class="logout-btn">🚪 Logout</button>
   </div>
 
-  <!-- 🎤 Voice Input Card -->
   <div class="container">
+
+    <!-- 🎤 Section 1: Short Investment Voice Input -->
     <div class="card">
       <h1>🎤 Voice Input for Investment</h1>
 
@@ -144,45 +172,57 @@
       <textarea id="transcribedText" readonly></textarea>
 
       <button id="submitButton">✅ Submit to Owner</button>
-      <button id="clearButton" class="clear-btn">🧹 Clear</button>
+      <button id="clearButton" class="reset-btn">🧹 Clear</button>
     </div>
+
+    <!-- 🎤 Section 2: Detailed Long Audio -->
+    <div class="card">
+      <h1>📢 Detailed Long Voice Message</h1>
+
+      <button id="startLongAudio">🎤 Start Recording</button>
+      <div id="statusLong" class="status">Your complete message will be sent as an audio file.</div>
+
+      <button id="submitButtonLong">✅ Submit Audio</button>
+      <button id="resetButtonLong" class="reset-btn">🔄 Reset</button>
+    </div>
+
   </div>
 
   <script>
+    // ====== Common ======
+    const logoutButton = document.getElementById('logoutButton');
+
+    // ====== Section 1: Short Input (unchanged) ======
     const micButton = document.getElementById('micButton');
     const submitButton = document.getElementById('submitButton');
     const clearButton = document.getElementById('clearButton');
-    const logoutButton = document.getElementById('logoutButton');
     const languageSelector = document.getElementById('language');
     const transcribedText = document.getElementById('transcribedText');
     const statusDiv = document.getElementById('status');
 
-    let recognition;
-    let isRecording = false;
+    let recognitionShort;
+    let isRecordingShort = false;
 
     if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = false;
+      recognitionShort = new webkitSpeechRecognition();
+      recognitionShort.continuous = true;
+      recognitionShort.interimResults = false;
 
-      recognition.onstart = () => {
-        isRecording = true;
+      recognitionShort.onstart = () => {
+        isRecordingShort = true;
         micButton.textContent = '🔴 Stop Recording';
         statusDiv.textContent = '🎧 Listening...';
         statusDiv.style.color = 'green';
       };
-
-      recognition.onend = () => {
-        if (isRecording) {
-          recognition.start();
-        } else {
+      recognitionShort.onend = () => {
+        if (isRecordingShort) recognitionShort.start();
+        else {
           micButton.textContent = '🎤 Start Recording';
           statusDiv.textContent = '✅ Recording Stopped';
           statusDiv.style.color = 'black';
         }
       };
-
-      recognition.onresult = (event) => {
+      recognitionShort.onresult = (event) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript + ' ';
@@ -191,22 +231,17 @@
         statusDiv.textContent = '✅ Captured speech... still listening';
       };
 
-      recognition.onerror = (event) => {
-        statusDiv.textContent = '❌ Error: ' + event.error;
-        statusDiv.style.color = 'red';
-        isRecording = false;
-        micButton.textContent = '🎤 Start Recording';
-      };
-
       micButton.addEventListener('click', () => {
-        if (!isRecording) {
-          recognition.lang = languageSelector.value;
-          recognition.start();
+        if (!isRecordingShort) {
+          recognitionShort.lang = languageSelector.value;
+          isRecordingShort = true;
+          recognitionShort.start();
         } else {
-          isRecording = false;
-          recognition.stop();
+          isRecordingShort = false;
+          recognitionShort.stop();
         }
       });
+
     } else {
       micButton.disabled = true;
       micButton.textContent = '❌ Speech Recognition Not Supported';
@@ -219,29 +254,19 @@
         alert('⚠️ Please record your voice before submitting.');
         return;
       }
-
       try {
         const response = await fetch('/dashboard/worker_input', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-          },
-          body: JSON.stringify({
-            language: languageSelector.value,
-            transcript: transcript
-          })
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+          body: JSON.stringify({ language: languageSelector.value, transcript })
         });
-
         if (response.ok) {
           alert('✅ Submitted successfully!');
           transcribedText.value = '';
-        } else {
-          alert('❌ This sentence does not fit into Investment or Harvest categories. Please try again.');
-        }
+        } else alert('❌ Invalid message. Try again.');
       } catch (error) {
         console.error(error);
-        alert('❌ Error occurred while submitting audio.');
+        alert('❌ Error while submitting.');
       }
     });
 
@@ -251,14 +276,82 @@
       statusDiv.style.color = 'gray';
     });
 
+    // ====== Section 2: Long Audio Recording ======
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecordingLong = false;
+    const startLongAudio = document.getElementById('startLongAudio');
+    const submitButtonLong = document.getElementById('submitButtonLong');
+    const resetButtonLong = document.getElementById('resetButtonLong');
+    const statusDivLong = document.getElementById('statusLong');
+
+    startLongAudio.addEventListener('click', async () => {
+      if (!isRecordingLong) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('❌ Your browser does not support audio recording.');
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstart = () => {
+          isRecordingLong = true;
+          startLongAudio.textContent = '🔴 Stop Recording';
+          statusDivLong.textContent = '🎧 Recording audio...';
+          statusDivLong.style.color = 'green';
+        };
+        mediaRecorder.onstop = () => {
+          isRecordingLong = false;
+          startLongAudio.textContent = '🎤 Start Recording';
+          statusDivLong.textContent = '✅ Audio recording stopped';
+          statusDivLong.style.color = 'black';
+        };
+
+        mediaRecorder.start();
+      } else {
+        mediaRecorder.stop();
+      }
+    });
+
+    submitButtonLong.addEventListener('click', async () => {
+      if (audioChunks.length === 0) {
+        alert('⚠️ Please record audio before submitting.');
+        return;
+      }
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'worker_audio.wav');
+
+      try {
+        const response = await fetch('/dashboard/worker_long_input', {
+          method: 'POST',
+          body: formData
+        });
+        if (response.ok) {
+          alert('✅ Audio submitted successfully!');
+          audioChunks = [];
+          statusDivLong.textContent = '';
+        } else alert('❌ Could not submit audio.');
+      } catch (error) {
+        console.error(error);
+        alert('❌ Error while submitting audio.');
+      }
+    });
+
+    resetButtonLong.addEventListener('click', () => {
+      audioChunks = [];
+      statusDivLong.textContent = '🔄 Audio reset';
+      statusDivLong.style.color = 'orange';
+    });
+
+    // ====== Logout ======
     logoutButton.addEventListener('click', async () => {
       try {
         const response = await fetch('/project/signout', { method: 'GET' });
-        if (response.ok) {
-          window.location.href = '/'; // redirect to home/login
-        } else {
-          alert('❌ Logout failed. Try again.');
-        }
+        if (response.ok) window.location.href = '/';
+        else alert('❌ Logout failed. Try again.');
       } catch (error) {
         console.error(error);
         alert('❌ Error during logout.');
@@ -266,4 +359,5 @@
     });
   </script>
 </body>
+
 </html>

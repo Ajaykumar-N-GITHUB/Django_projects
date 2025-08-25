@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from dashboard.liveweather import get_weather
 from dashboard.services import add_record_services, fetch_record_services, profit_loss_services, delete_record_services, worker_dashboard_services
 from dashboard.services import set_reminder_services, pie_bar_services, future_expenses_services, report_download_services, update_record_services
-from dashboard.services import add_worker_services, remove_worker_services
+from dashboard.services import add_worker_services, remove_worker_services, worker_long_input_services, log_download_services
 from rest_framework.response import Response
 from rest_framework import status
 from account.models import Customer, Worker
@@ -205,5 +205,35 @@ class RemoveWorkerView(APIView):
         if res is True:
             print("success")
             return Response({"message": "Worker removed successfully"}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class WorkerLongInputView(APIView):
+
+    def post(self, request):
+        user_id = request.session.get('user_id')
+        print(user_id)
+        data = request.data.copy()
+        data['user_id'] = user_id
+        print(data)
+        res = worker_long_input_services(data)
+        if res is True:
+            return Response({"message": "Long input processed successfully"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+
+class LogDownloadView(APIView):
+
+    def post(self, request):
+        user_id = request.session.get('user_id')
+        data = request.data.copy()
+        data['user_id'] = user_id
+        res = log_download_services(data)
+        print(res)
+        if res.status_code == 200:
+            return res
+        if res.status_code == 404:
+            return Response({"error": "No logs found for this worker"}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)

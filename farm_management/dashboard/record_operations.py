@@ -1,4 +1,4 @@
-from pydoc import text
+from pydoc import doc, text
 from urllib import response
 from dashboard.models import AddRecord
 from account.models import Customer, Worker
@@ -27,7 +27,12 @@ from reportlab.lib import colors
 from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 )
-from dashboard.models import AddRecord
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+
+from django.utils.timezone import now, timedelta
+from google.cloud import speech
+from dashboard.models import AddRecord, TaskLog
 import spacy
 from pathlib import Path
 import requests
@@ -38,7 +43,6 @@ import google.generativeai as genai
 
 genai_apikey = os.environ.get("genai_key")
 subscription_key = os.environ.get("azure_key")
-
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -54,7 +58,7 @@ label_encoder = joblib.load(encoder_path)
 
 def add_record(data):
     
-    print("Received data:", data)
+    # print("Received data:", data)
     transcript_value = data.get('transcript')
     if transcript_value:
         worker = Worker.objects.get(worker_id=data['user_id'])
@@ -83,7 +87,7 @@ def add_record(data):
 def get_records(data):
     try:
         user = Customer.objects.get(user_id=data['user_id'])
-        records = AddRecord.objects.filter(farm_owner=user, type='Investment')
+        records = AddRecord.objects.filter(farm_owner=user)
 
         
         items = []
@@ -91,6 +95,7 @@ def get_records(data):
             items.append({
                     'id': r.id,
                     'item_name': r.item_name,
+                    'type': r.type,
                     'amount': r.amount,
                     'date': r.date.strftime('%Y-%m-%d'),
                 })
@@ -135,10 +140,13 @@ def delete_record(data):
 
 
 def add_worker(data):
+    # print(data)
 
     try:
         if Worker.objects.filter(worker_id=data['worker_id']).exists():
             return "Worker Id already exists. Please choose a different one"
+        if Worker.objects.filter(phone_number=data['worker_phone_number']).exists():
+            return "Phone number already exists. Please choose a different one"
         else:
             user = Customer.objects.get(user_id=data['user_id'])
             worker = Worker()
@@ -160,9 +168,9 @@ def remove_worker(data):
 
     try:
         user = Customer.objects.get(user_id=data['user_id'])
-        print(data)
+        # print(data)
         worker = Worker.objects.filter(worker_id=data['worker_id'], owner=user).first()
-        print(worker)
+        # print(worker)
         if worker:
             worker.delete()
             return True
@@ -235,51 +243,59 @@ def set_reminder(data):
         print("Error while setting reminder:", e)
         return str(e)
 
-
-def send_reminder(user_id):
+def send_reminder():
     try:
-        print(user_id)
-        user = Customer.objects.get(user_id=user_id)
         sender_email = "ajayjothika17@gmail.com"
         sender_password = "herp ioyd scad tvgl"
-        receiver_email = user.email
-        print(receiver_email)
         subject = "Reminder from Farm Management"
         today_date = timezone.localtime(timezone.now()).date()
-        print(today_date)
-        reminder_messsage = Reminder.objects.filter(user=user, date = today_date).first().message
-        message = f"Dear {user.name},\n\nThis is a reminder for your upcoming task: {reminder_messsage}.\n\nBest regards,\nFarm Management Team"
-        body = message
 
-    
-        message = MIMEMultipart()
-        message['From'] = sender_email
-        message['To'] = receiver_email
-        message['Subject'] = subject
+        # ✅ Get all reminders for today
+        reminders_today = Reminder.objects.filter(date=today_date)
 
-        message.attach(MIMEText(body, 'plain'))
-        
-        reminder_date = Reminder.objects.filter(user=user, date = today_date).first().date
+        if not reminders_today.exists():
+            # print("No reminders for today")
+            return "No reminders"
 
-        if today_date == reminder_date:
+        # ✅ Setup SMTP connection once
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+
+        for reminder in reminders_today:
+            user = reminder.user  # assuming Reminder has a ForeignKey to Customer
+            receiver_email = user.email
+            reminder_message = reminder.message
+
+            # Email body
+            body = f"""
+            Dear {user.name},
+
+            This is a reminder for your upcoming task: {reminder_message}.
+
+            Best regards,
+            Farm Management Team
+            """
+
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = receiver_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+
             try:
-                print("Sending reminder email...")
-                server = smtplib.SMTP('smtp.gmail.com', 587)
-                # server.set_debuglevel(1)
-                server.starttls() 
-                server.login(sender_email, sender_password)
-                server.sendmail(sender_email, receiver_email, message.as_string())
-                print("Reminder email sent successfully")
-                return True
+                print(f"Sending reminder email to {receiver_email}...")
+                server.sendmail(sender_email, receiver_email, msg.as_string())
+                print(f"Reminder email sent to {receiver_email}")
 
             except Exception as e:
-                return str(e)
+                print(f"Failed to send email to {receiver_email}: {e}")
 
-            finally:
-                server.quit()
+        server.quit()
+        return True
 
     except Exception as e:
-        print("Error while setting reminder:", e)
+        print("Error while sending reminders:", e)
         return str(e)
     
 
@@ -462,6 +478,8 @@ def future_expenses(data):
         response = model.generate_content(prompt)
         raw_text = response.text.strip()
 
+        # print(raw_text)
+
         clean_text = raw_text.replace("```json", "").replace("```", "").strip()
 
         try:
@@ -487,14 +505,17 @@ def detect_type(sentence):
     model = genai.GenerativeModel("models/gemini-1.5-flash")
 
     prompt = f"""
-    You are a classifier for agricultural sentences. 
+    You are a classifier for agricultural sentences.
+    Analyze this sentence with your trained set of data and give the proper result. Check whether it will come under Investment, Harvest, or Other and finalize your classification.
+    return output should be a string "Investment" or "Harvest" or "Other"
     Classify each sentence as:
     - "Investment": Money spent on farming (buying seeds, fertilizer, wages for labor, maintenance, planting, etc.), Money spent on labor costs while harvesting.
-    - "Harvest": Money earned or activities related to selling crops, fruits, livestock, etc.
-    - "Other": If it does not fit either category.
+    - "Harvest": Money earned or activities related to selling crops, fruits, livestock, selling milk, etc.
+    - "Other": If it does not fit either category or if you are unsure.
 
     Examples:
     "Bought 3 bags of fertilizer for 1200 rupees" → Investment
+   
     "Paid 500 for mango saplings" → Investment
     "Spent 2500 on tractor repair" → Investment
     "Sold 200 kg of rice for 15,000 rupees" → Harvest
@@ -522,6 +543,26 @@ def detect_item_amount(sentence):
     Example:
     Input: "yesterday groundnut field has been weeded and wage is 2500"
     Output: {{"item": "groundnut", "activity": "weeding", "price": 2500}}
+    Input: "Bought 3 bags of fertilizer for 1200 rupees"
+    Output: {{"item": "fertilizer", "activity": "buying", "price": 1200}}
+    Input: "Paid 500 for mango saplings"
+    Output: {{"item": "mango", "activity": "buying", "price": 500}}
+    Input: "Spent 2500 on tractor repair"
+    Output: {{"item": "tractor", "activity": "repairing", "price": 2500}}
+    Input: "Today 10 people came to work as labourers. Salary 10,000"
+    Output: {{"item": "labour", "activity": "working", "price": 10000}}
+    Input: "Sold 200 kg of rice for 15,000 rupees"
+    Output: {{"item": "rice", "activity": "selling", "price": 15000}}
+    Input: "Harvested sugarcane and sold for 25,000 rupees"
+    Output: {{"item": "sugarcane", "activity": "harvesting", "price": 25000}}
+    Input: "Invested 5000 in new irrigation system"
+    Output: {{"item": "irrigation system", "activity": "investment", "price": 5000}}
+    Input: "Bought 10 liters of diesel for 800 rupees"
+    Output: {{"item": "diesel", "activity": "buying", "price": 800}}
+    Input: "Irrigated the paddy field and spent 2000"
+    Output: {{"item": "paddy", "activity": "irrigating", "price": 2000}}
+    Input: "Bought cow fodder for 1500 rupees"
+    Output: {{"item": "cow fodder", "activity": "buying", "price": 1500}}
 
     Input: "{sentence}"
     Output:
@@ -530,6 +571,7 @@ def detect_item_amount(sentence):
     raw_text = response.text.strip()
 
     clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+    # print(clean_text)
 
     try:
         data = json.loads(clean_text)
@@ -543,27 +585,27 @@ def detect_item_amount(sentence):
 def worker_dashboard(data):
     count = True
     sentence_en = ''
-    print("Received DATA:", data)
+    # print("Received DATA:", data)
     if data['language'] == 'ta-IN':
         sentence_en = detect_and_translate(data['transcript'])
     else:
         sentence_en = data['transcript']
-    print("Translated sentence:", sentence_en)
+    # print("Translated sentence:", sentence_en)
 
     detected_type = detect_type(sentence_en)
 
-    print("Detected type:", detected_type)
+    # print("Detected type:", detected_type)
 
     if detected_type == "classification: other" or detected_type == "other":
         count = False
         return "This sentence does not fit into Investment or Harvest categories."
     if detected_type == 'investment' or detected_type == "classification: investment":
         data['record_type'] = 'Investment'
-    elif detected_type == 'harvest' or detected_type == "classification: harvest":
+    if detected_type == 'harvest' or detected_type == "classification: harvest":
         data['record_type'] = 'Harvest'
 
     detected_item_and_amount = detect_item_amount(sentence_en)
-    print("Detected item and amount:", detected_item_and_amount)
+    # print("Detected item and amount:", detected_item_and_amount)
     # Detected item and amount: {'item': 'paddy', 'activity': 'cultivating', 'price': 10000}
     if detected_item_and_amount['item'] is None or detected_item_and_amount['price'] is None:
         count = False
@@ -572,10 +614,11 @@ def worker_dashboard(data):
     else:
         data['item_name'] = detected_item_and_amount['item'] + " " + detected_item_and_amount['activity']
         data['amount'] = detected_item_and_amount['price']
-    print("Detected item and amount:", detected_item_and_amount)
+    # print("Detected item and amount:", detected_item_and_amount)
 
     if count:
         data['record_date'] = datetime.now().strftime('%Y-%m-%d')
+        # print(data)
         res = add_record(data)
 
         if res is not True:
@@ -584,4 +627,142 @@ def worker_dashboard(data):
         return "Could not process the record due to missing item or amount information."
 
     return True
+
+
+
+def add_long_input(data):
+    # print(data)
+
+    genai.configure(api_key=genai_apikey)
+
+
+    # Choose model that supports audio
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
+
+    # Get the uploaded audio file (InMemoryUploadedFile)
+    audio_file = data["audio"]  # because QueryDict gives a list
+
+    # Read bytes from uploaded file
+    audio_bytes = audio_file.read()
+
+    # Reset file pointer if you want to use the file later
+    audio_file.seek(0)
+
+    # Send audio + instruction
+    response = model.generate_content([
+        {"mime_type": audio_file.content_type, "data": audio_bytes},
+        "Transcribe this Tamil audio to text in Tamil. Then translate it into English."
+        "if audio is in hindi then convert it to english"
+        "if it is in english then keep it as it is"
+        "Give only the English sentence as output in the response i dont want any other text only english converted summary"
+    ])
+    # print("Transcription and Translation:", response.text)
+
+    tasklog = TaskLog()
+    worker = Worker.objects.get(worker_id=data['user_id'])
+    customer = Customer.objects.get(user_id=worker.owner.user_id)
+    # print("Customer ID:", customer.user_id)
+    tasklog.worker_id = data['user_id']
+    tasklog.user = customer
+    tasklog.action = response.text
+    tasklog.date = datetime.now().date()
+    tasklog.save()
+
+    # print("---- RAW RESPONSE ----")
+    # print(response.text)
+    return True
+
+
+def log_download(data):
+    try:
+        # print(data)
+        # print("Logging download activity...")
+        # print("User ID:", data["user_id"])
+        # print("Download Timestamp:", datetime.now())
+        worker_id = data['worker_id']
+        report_type = data["report_type"]
+        user_id = data["user_id"]
+        print("micky")
+            # Base queryset
+        
+        logs = TaskLog.objects.filter(worker_id=worker_id)
+        empty_logs = not logs.exists()
+        if empty_logs:
+            print("No logs found for this worker")
+            return HttpResponse("No logs found for this worker", content_type="text/plain", status=404)
+            # Date filters
+        today = now().date()
+        if report_type == "today":
+            logs = logs.filter(created_at__date=today)
+
+        elif report_type == "week":
+            start_week = today - timedelta(days=7)
+            logs = logs.filter(created_at__date__gte=start_week)
+
+        elif report_type == "month":
+            start_month = today.replace(day=1)
+            logs = logs.filter(created_at__date__gte=start_month)
+
+        elif report_type == "year":
+            start_year = today.replace(month=1, day=1)
+            logs = logs.filter(created_at__date__gte=start_year)
+
+        # If no logs found
+        if not logs.exists():
+            response = HttpResponse("No logs found for given criteria.", content_type="text/plain")
+            response.status_code = 404
+            return response
+
+        # ---- Generate PDF ----
+        response = HttpResponse(content_type="application/pdf")
+        response['Content-Disposition'] = f'attachment; filename="report_{worker_id}_{report_type}.pdf"'
+
+        doc = SimpleDocTemplate(response, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+
+    # Greeting for the owner
+        greeting = Paragraph(f"Hello {user_id}, here is the report for <b>{worker_id}</b>", styles['Heading2'])
+        elements.append(greeting)
+        elements.append(Spacer(1, 12))
+
+        # Report title
+        elements.append(Paragraph(f"Report Type: {report_type.capitalize()}", styles['Normal']))
+        elements.append(Paragraph(f"Generated On: {now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+        elements.append(Spacer(1, 20))
+
+        styles = getSampleStyleSheet()   
+        normal_style = styles["Normal"]
+
+        data = [["Worker ID", "Date", "Work"]]
+        for log in logs:
+            data.append([
+            log.worker_id,
+            log.created_at.strftime("%Y-%m-%d"),
+            Paragraph(log.action, normal_style)   # ✅ Wrap text
+            ])
+
+        # Create table with larger work column
+        table = Table(data, colWidths=[100, 100, 300])
+        table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4CAF50")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),  # ✅ Align text at top
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        elements.append(table)
+        doc.build(elements)
+
+
+        return response
     
+    except Exception as e:
+        print("Error occurred while logging download:", e)
+        response = HttpResponse("Error occurred while logging download.", content_type="text/plain")
+        response.status_code = 500
+        return response
