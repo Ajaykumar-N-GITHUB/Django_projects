@@ -31,7 +31,6 @@ from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
 from django.utils.timezone import now, timedelta
-from google.cloud import speech
 from dashboard.models import AddRecord, TaskLog
 import spacy
 from pathlib import Path
