@@ -1,5 +1,6 @@
 from django.urls import path
-from account.views import Login, Signup,  About, Contact, Resetpassword, Logout, Readme
+from account.views import Login, Signup,  About, Contact, Resetpassword, Logout, Readme, Manage
+from account.views import Pendingrecord, ApproveExpense, RejectExpense, AllRecords
 
 urlpatterns = [
     path('login',Login.as_view()),
@@ -9,6 +10,9 @@ urlpatterns = [
     path('resetpass', Resetpassword.as_view()),
     path('signout', Logout.as_view(), name='logout'),
     path('readme', Readme.as_view()),
-    
-    
+    path('manage', Manage.as_view()),
+    path('fetch_pending_records', Pendingrecord.as_view()),
+    path('fetch_all_records', AllRecords.as_view()),
+    path('approve-expense', ApproveExpense.as_view()),
+    path('reject-expense', RejectExpense.as_view()),
 ]

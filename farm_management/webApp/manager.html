@@ -1,0 +1,574 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Worker Expenses Management - Farm Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6f9;
+        }
+
+        header {
+            background-color: #2e8b57;
+            padding: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            padding: 8px 15px;
+            background-color: #ff5e5e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background-color: #e04545;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #2e8b57;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .approve-btn {
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .approve-btn:hover {
+            background-color: #218838;
+        }
+
+        .reject-btn {
+            padding: 6px 12px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .reject-btn:hover {
+            background-color: #c82333;
+        }
+
+        .amount-cell {
+            font-weight: 600;
+            color: #2e8b57;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff5e5e;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card.pending {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .summary-card.total {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .refresh-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>💰 Worker Expenses Management</div>
+        <a href="/project/signout" class="back-btn">Logout</a>
+    </header>
+
+    {% csrf_token %}
+
+    <div class="container">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card pending">
+                <h3>Pending Requests</h3>
+                <div class="value" id="pending-count">0</div>
+            </div>
+            <div class="summary-card total">
+                <h3>Total Amount</h3>
+                <div class="value" id="total-amount">₹0</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Worker Expense Requests</div>
+            
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Worker ID</label>
+                    <select id="worker-filter">
+                        <option value="">All Workers</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="status-filter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Type</label>
+                    <select id="type-filter">
+                        <option value="">All Types</option>
+                        <option value="investment">Investment</option>
+                        <option value="harvest">Harvest</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Date From</label>
+                    <input type="date" id="date-from">
+                </div>
+                <div class="filter-group">
+                    <label>Date To</label>
+                    <input type="date" id="date-to">
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadExpenseData()">🔄 Refresh Data</button>
+            
+            <div id="loading" class="loading">
+                🔄 Loading expense data...
+            </div>
+
+            <div id="error" class="error" style="display: none;">
+                ❌ Failed to load expense data. Please try again.
+            </div>
+
+            <div id="content" style="display: none;">
+                <div class="table-container">
+                    <table id="expenses-table">
+                        <thead>
+                            <tr>
+                                <th>Worker ID</th>
+                                <th>Item/Activity</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExpenseData();
+            setupFilters();
+        });
+
+        async function loadExpenseData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+                document.getElementById('error').style.display = 'none';
+
+                // Updated API call to fetch all records, not just pending ones
+                const response = await fetch('/user/fetch_all_records', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayExpenseData(data);
+                updateSummaryCards(data);
+                populateWorkerFilter(data);
+                
+            } catch (error) {
+                console.error('Error fetching expense data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function displayExpenseData(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            const tableBody = document.getElementById('expenses-tbody');
+            tableBody.innerHTML = '';
+            
+            if (data.expenses && data.expenses.length > 0) {
+                data.expenses.forEach(expense => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${expense.worker_id}</td>
+                        <td>${expense.item_name}</td>
+                        <td>${capitalizeFirst(expense.type)}</td>
+                        <td class="amount-cell">₹${expense.amount.toLocaleString()}</td>
+                        <td>${formatDate(expense.date)}</td>
+                        <td><span class="status-${expense.status}">${capitalizeFirst(expense.status)}</span></td>
+                        <td>
+                            ${expense.status === 'pending' ? `
+                                <div class="action-buttons">
+                                    <button class="approve-btn" onclick="approveExpense(${expense.id})">
+                                        ✓ Approve
+                                    </button>
+                                    <button class="reject-btn" onclick="rejectExpense(${expense.id})">
+                                        ✗ Reject
+                                    </button>
+                                </div>
+                            ` : `<span class="status-${expense.status}">${capitalizeFirst(expense.status)}</span>`}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7">No expense data found</td></tr>';
+            }
+        }
+
+        function updateSummaryCards(data) {
+            if (!data.expenses) return;
+
+            const pending = data.expenses.filter(e => e.status === 'pending').length;
+            const totalAmount = data.expenses.reduce((sum, e) => sum + e.amount, 0);
+
+            console.log('Updating summary cards');
+
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('total-amount').textContent = `₹${totalAmount.toLocaleString()}`;
+        }
+
+        function populateWorkerFilter(data) {
+            const workerFilter = document.getElementById('worker-filter');
+            const workers = [...new Set(data.expenses.map(e => e.worker_id))];
+            
+            workers.forEach(worker => {
+                const option = document.createElement('option');
+                option.value = worker;
+                option.textContent = worker;
+                workerFilter.appendChild(option);
+            });
+        }
+
+        async function approveExpense(expenseId) {
+            if (!confirm('Are you sure you want to approve this expense?')) return;
+
+            try {
+                // Dummy API call - replace with your actual endpoint
+                const response = await fetch('/user/approve-expense', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        expense_id: expenseId,
+                        action: 'approve'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Expense approved successfully!');
+                    loadExpenseData(); // Refresh the data
+                } else {
+                    throw new Error('Failed to approve expense');
+                }
+            } catch (error) {
+                console.error('Error approving expense:', error);
+                alert('Failed to approve expense. Please try again.');
+            }
+        }
+
+        async function rejectExpense(expenseId) {
+            if (!confirm('Are you sure you want to reject this expense?')) return;
+
+            try {
+                // Dummy API call - replace with your actual endpoint
+                const response = await fetch('/user/reject-expense', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        expense_id: expenseId,
+                        action: 'reject'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Expense rejected successfully!');
+                    loadExpenseData(); // Refresh the data
+                } else {
+                    throw new Error('Failed to reject expense');
+                }
+            } catch (error) {
+                console.error('Error rejecting expense:', error);
+                alert('Failed to reject expense. Please try again.');
+            }
+        }
+
+        function setupFilters() {
+            // Add event listeners for filters
+            document.getElementById('worker-filter').addEventListener('change', applyFilters);
+            document.getElementById('status-filter').addEventListener('change', applyFilters);
+            document.getElementById('type-filter').addEventListener('change', applyFilters);
+            document.getElementById('date-from').addEventListener('change', applyFilters);
+            document.getElementById('date-to').addEventListener('change', applyFilters);
+        }
+
+        function applyFilters() {
+            const workerFilter = document.getElementById('worker-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            const typeFilter = document.getElementById('type-filter').value;
+            const dateFrom = document.getElementById('date-from').value;
+            const dateTo = document.getElementById('date-to').value;
+
+            const rows = document.querySelectorAll('#expenses-tbody tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 7) return; // Skip empty rows
+
+                const workerId = cells[0].textContent;
+                const type = cells[2].textContent.toLowerCase();
+                const date = cells[4].textContent;
+                const status = cells[5].textContent.toLowerCase().trim();
+
+                let show = true;
+
+                if (workerFilter && workerId !== workerFilter) show = false;
+                if (statusFilter && !status.includes(statusFilter)) show = false;
+                if (typeFilter && type !== typeFilter) show = false;
+                if (dateFrom && new Date(convertDateFormat(date)) < new Date(dateFrom)) show = false;
+                if (dateTo && new Date(convertDateFormat(date)) > new Date(dateTo)) show = false;
+
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        function convertDateFormat(dateStr) {
+            // Convert "Aug 25, 2024" to "2024-08-25"
+            const date = new Date(dateStr);
+            return date.toISOString().split('T')[0];
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        }
+    </script>
+</body>
+</html>

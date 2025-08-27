@@ -41,6 +41,24 @@
             color: white;
             font-size: 14px;
             cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .manage-btn {
+            padding: 8px 15px;
+            background-color: #ff5e5e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .dashboard {
@@ -61,6 +79,37 @@
             font-size: 18px;
             margin-bottom: 10px;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expand-icon {
+            margin-right: 10px;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .section-content {
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .section-content.expanded {
+            opacity: 1;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+            opacity: 0;
         }
 
         table {
@@ -134,11 +183,17 @@
             <span style="color: #ffd700;">{{ user_name }}</span>
         </div>
 
-        <!-- Logout Button -->
-        <form id="logoutForm" method="get">
-            {% csrf_token %}
-            <button type="submit" class="logout-btn">🔓 Logout</button>
-        </form>
+        <!-- Header Buttons -->
+        <div class="header-buttons">
+            <form id="manageForm" method="get" action="/user/manage" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="manage-btn">⚙️ Manage</button>
+            </form>
+            <form id="logoutForm" method="get" action="/project/signout" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">🔓 Logout</button>
+            </form>
+        </div>
     </header>
 
     <div class="dashboard">
@@ -164,24 +219,29 @@
 
             <!-- Current Investment Table -->
             <div class="card">
-                <div class="section-title">Current Investment</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item/Activity</th>
-                            <th>Harvest/Investment</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Remove</th>
-                            <th>Edit</th>
-                        </tr>
-                    </thead>
-                    <tbody id="investment-table-body">
-                        <tr>
-                            <td colspan="5">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    Current Investment/Harvest
+                </div>
+                <div class="section-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item/Activity</th>
+                                <th>Harvest/Investment</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Remove</th>
+                                <th>Edit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investment-table-body">
+                            <tr>
+                                <td colspan="5">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
 
@@ -189,34 +249,44 @@
             <br>
             <!-- Future Expenses -->
             <div class="card">
-                <div class="section-title">Future Expenses You May Incur Based on Your Investments</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Reason</th>
-                            <th>Estimated Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="future-expenses-body">
-                        <tr>
-                            <td colspan="3">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    Future Expenses You May Incur Based on Your Investments
+                </div>
+                <div class="section-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Reason</th>
+                                <th>Estimated Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="future-expenses-body">
+                            <tr>
+                                <td colspan="3">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <br>
             <br>
             <!-- Add Reminder -->
             <div class="card">
-                <div class="section-title">Add Reminder<br><b>You Can Add 1 Reminder For a Date</b></div>
-                <form class="reminder-form" id="reminderForm">
-                    {% csrf_token %}
-                    <input type="text" id="reminderMessage" placeholder="Reminder message" required />
-                    <input type="datetime-local" id="reminderDate" required />
-                    <button class="btn" type="submit">Set Reminder</button>
-                </form>
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    Add Reminder<br><b>You Can Add 1 Reminder For a Date</b>
+                </div>
+                <div class="section-content">
+                    <form class="reminder-form" id="reminderForm">
+                        {% csrf_token %}
+                        <input type="text" id="reminderMessage" placeholder="Reminder message" required />
+                        <input type="datetime-local" id="reminderDate" required />
+                        <button class="btn" type="submit">Set Reminder</button>
+                    </form>
+                </div>
             </div>
 
         </div>
@@ -226,53 +296,114 @@
 
             <!-- Weather -->
             <div class="card">
-                <div class="section-title">🌦️ Today's Weather</div>
-                <div class="weather">
-                    Location: <strong>{{ weather_data.Location|default:"NA" }}</strong><br>
-                    Temp: {{ weather_data.Temp|default:"NA" }}°C<br>
-                    Humidity: {{ weather_data.Humidity|default:"NA" }}%<br>
-                    Condition: {{ weather_data.Condition|default:"NA" }}<br>
-                    Wind: {{ weather_data.Wind|default:"NA" }} km/h<br>
-                    Cloud: {{ weather_data.Cloud|default:"NA" }}%
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    🌦️ Today's Weather
+                </div>
+                <div class="section-content">
+                    <div class="weather">
+                        Location: <strong>{{ weather_data.Location|default:"NA" }}</strong><br>
+                        Temp: {{ weather_data.Temp|default:"NA" }}°C<br>
+                        Humidity: {{ weather_data.Humidity|default:"NA" }}%<br>
+                        Condition: {{ weather_data.Condition|default:"NA" }}<br>
+                        Wind: {{ weather_data.Wind|default:"NA" }} km/h<br>
+                        Cloud: {{ weather_data.Cloud|default:"NA" }}%
+                    </div>
                 </div>
             </div>
             <br>
             <!-- Profit / Loss -->
             <div class="card">
-                <div class="section-title">Total Profit / Loss</div>
-                <div id="profit-loss-display" style="font-size: 20px;">Loading...</div>
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    Total Profit / Loss
+                </div>
+                <div class="section-content">
+                    <div id="profit-loss-display" style="font-size: 20px;">Loading...</div>
+                </div>
             </div>
             <br>
             <!-- Report Download -->
             <div class="card">
-                <div class="section-title">📄 Download ExpenseReports</div>
-                <button class="btn" onclick="downloadReport('month')">Download Monthly Report</button>
-                <button class="btn" onclick="downloadReport('year')">Download Yearly Report</button>
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    📄 Download Expense Reports
+                </div>
+                <div class="section-content">
+                    <button class="btn" onclick="downloadReport('month')">Download Monthly Report</button>
+                    <button class="btn" onclick="downloadReport('year')">Download Yearly Report</button>
+                </div>
             </div>
             <br>
 
             <div class="card">
-            <div class="section-title">📄 Worker Log Report</div>
-            <form id="reportForm" method="POST" action="/dashboard/get-report">
-                {% csrf_token %}
-                <input type="text" name="worker_id" placeholder="User Name" required />
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    📄 Worker Log Report
+                </div>
+                <div class="section-content">
+                    <form id="reportForm" method="POST" action="/dashboard/get-report">
+                        {% csrf_token %}
+                        <input type="text" name="worker_id" placeholder="User Name" required />
 
-                <label for="report_type">Select Report:</label>
-                <select name="report_type">
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="year">This Year</option>
-                </select>
+                        <label for="report_type">Select Report:</label>
+                        <select name="report_type">
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="year">This Year</option>
+                        </select>
 
-                <button class="btn" type="submit" style="background-color:#ff5e5e;">Worker Report</button>
-            </form>
+                        <button class="btn" type="submit" style="background-color:#ff5e5e;">Worker Report</button>
+                    </form>
 
-            <!-- Result will appear here -->
-            <div id="reportResult" style="margin-top: 15px; font-weight: bold; color: green;"></div>
+                    <!-- Result will appear here -->
+                    <div id="reportResult" style="margin-top: 15px; font-weight: bold; color: green;"></div>
+                </div>
             </div>
             <br>
             <br>
+            <!-- Add Worker -->
+            <div class="card">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    👨‍🌾 Add Worker
+                </div>
+                <div class="section-content">
+                    <form class="worker-form" id="addWorkerForm">
+                        {% csrf_token %}
+                        <input type="text" name="worker_name" placeholder="Full Name" required />
+                        <input type="text" name="worker_id" placeholder="User Name" required />
+                        <input type="text" name="worker_passwd" placeholder="User Password" required />
+                        <input type="text" name="worker_phone_number" placeholder="Phone Number" required />
+                         <label for="worker_role">Select Role:</label>
+                        <select name="worker_role">
+                            <option value="manager">Manager</option>
+                            <option value="worker">Worker</option>
+                        </select>
+
+                        <button class="btn" type="submit" style="background-color:#ff5e5e;">Add</button>
+                    </form>
+                </div>
+            </div>
+            <br>
+
+            <!-- Remove Worker -->
+            <div class="card">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span class="expand-icon">></span>
+                    ❌ Remove Worker
+                </div>
+                <div class="section-content">
+                    <form class="worker-form" id="removeWorkerForm">
+                        {% csrf_token %}
+                        <input type="text" name="worker_id" placeholder="User Name" required />
+                        <button class="btn" type="submit" style="background-color:#ff5e5e;">Remove Worker</button>
+                    </form>
+                </div>
+            </div>
+            <br>
+            
             <!-- Charts -->
             <div class="chart-container">
                 <div class="chart">
@@ -282,29 +413,6 @@
                     <canvas id="barChart" width="200" height="200"></canvas>
                 </div>
             </div>
-            <br>
-            <!-- Add Worker -->
-            <div class="card">
-                <div class="section-title">👨‍🌾 Add Worker</div>
-                <form class="worker-form" id="addWorkerForm">
-                    {% csrf_token %}
-                    <input type="text" name="worker_id" placeholder="User Name" required />
-                    <input type="text" name="worker_passwd" placeholder="User Password" required />
-                    <input type="tel" name="worker_phone_number" placeholder="Phone Number" required />
-                    <button class="btn" type="submit">Add Worker</button>
-                </form>
-            </div>
-            <br>
-
-            <!-- Remove Worker -->
-            <div class="card">
-                <div class="section-title">❌ Remove Worker</div>
-                <form class="worker-form" id="removeWorkerForm">
-                    {% csrf_token %}
-                    <input type="text" name="worker_id" placeholder="User Name" required />
-                    <button class="btn" type="submit" style="background-color:#ff5e5e;">Remove Worker</button>
-                </form>
-            </div>
         </div>
 
         <div id="message"></div>
@@ -313,10 +421,67 @@
 </body>
 
 <!-- JS Section -->
+<script>
+    // Toggle Section Function
+    function toggleSection(element) {
+        const expandIcon = element.querySelector('.expand-icon');
+        const content = element.nextElementSibling;
+        
+        if (content.classList.contains('collapsed') || (!content.classList.contains('expanded') && !content.classList.contains('collapsed'))) {
+            // Expand
+            content.classList.remove('collapsed');
+            content.classList.add('expanded');
+            expandIcon.classList.add('expanded');
+            content.style.maxHeight = content.scrollHeight + 'px';
+        } else {
+            // Collapse
+            content.classList.remove('expanded');
+            content.classList.add('collapsed');
+            expandIcon.classList.remove('expanded');
+            content.style.maxHeight = '0px';
+        }
+    }
+
+    // Manage Button Function - removed unused function
+
+    // Initialize all sections as collapsed on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const allContents = document.querySelectorAll('.section-content');
+        allContents.forEach(content => {
+            content.classList.add('collapsed');
+            content.style.maxHeight = '0px';
+        });
+        
+        // Keep all expand icons in default state (not expanded)
+        const allIcons = document.querySelectorAll('.expand-icon');
+        allIcons.forEach(icon => {
+            icon.classList.remove('expanded');
+        });
+    });
+</script>
+
 <script> 
+    // Manage Form Script
+    const manageForm = document.getElementById('manageForm');
+    const message = document.getElementById('message');
+
+    manageForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        message.style.display = 'block';
+        message.className = '';
+        message.textContent = '⚙️ Loading user management...';
+
+        try {
+            // Navigate to user management page
+            window.location.href = '/user/manage';
+        } catch (error) {
+            message.className = 'error';
+            message.textContent = '❌ Failed to navigate to management page.';
+        }
+    });
+
     // Logout Form Script
     const logout_Form = document.getElementById('logoutForm');
-    const message = document.getElementById('message');
 
     logoutForm.addEventListener('submit', async function (e) {
         e.preventDefault();

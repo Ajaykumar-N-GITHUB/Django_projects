@@ -44,6 +44,8 @@ genai_apikey = os.environ.get("genai_key")
 subscription_key = os.environ.get("azure_key")
 
 
+
+
 nlp = spacy.load("en_core_web_sm")
 model_path = os.path.join(settings.BASE_DIR, 'farm_management', 'rf_expense_model.pkl')
 encoder_path = os.path.join(settings.BASE_DIR, 'farm_management', 'label_encoder.pkl')
@@ -57,8 +59,9 @@ label_encoder = joblib.load(encoder_path)
 
 def add_record(data):
     
-    # print("Received data:", data)
+    print("Received data:", data)
     transcript_value = data.get('transcript')
+    record = AddRecord()
     if transcript_value:
         worker = Worker.objects.get(worker_id=data['user_id'])
         if worker:
@@ -69,9 +72,10 @@ def add_record(data):
         user = Customer.objects.get(user_id=data['owner_id'])
     else:
         user = Customer.objects.get(user_id=data['user_id'])
+        record.status = "approved"
     try:
-        record = AddRecord()
         record.farm_owner = user
+        record.worker_id = data['user_id']
         record.type = data['record_type']
         record.item_name = data['item_name']
         record.date = data['record_date']
@@ -86,7 +90,7 @@ def add_record(data):
 def get_records(data):
     try:
         user = Customer.objects.get(user_id=data['user_id'])
-        records = AddRecord.objects.filter(farm_owner=user)
+        records = AddRecord.objects.filter(farm_owner=user, status='approved')
 
         
         items = []
@@ -139,7 +143,7 @@ def delete_record(data):
 
 
 def add_worker(data):
-    # print(data)
+    print(f"DEBUG add_worker - Input data: {data}")
 
     try:
         if Worker.objects.filter(worker_id=data['worker_id']).exists():
@@ -147,8 +151,22 @@ def add_worker(data):
         if Worker.objects.filter(phone_number=data['worker_phone_number']).exists():
             return "Phone number already exists. Please choose a different one"
         else:
-            user = Customer.objects.get(user_id=data['user_id'])
+            print(f"DEBUG add_worker - Looking for Customer with user_id: {data['user_id']}")
+            
+            # Check if the user exists in Customer table
+            try:
+                user = Customer.objects.get(user_id=data['user_id'])
+                print(f"DEBUG add_worker - Found Customer: {user.user_id}, role: {user.role}")
+            except Customer.DoesNotExist:
+                print(f"DEBUG add_worker - Customer with user_id '{data['user_id']}' does not exist")
+                # Let's check what customers actually exist
+                all_customers = Customer.objects.all().values('user_id', 'role', 'name')
+                print(f"DEBUG add_worker - Available customers: {list(all_customers)}")
+                return f"Customer with user_id '{data['user_id']}' does not exist. Available customers: {[c['user_id'] for c in all_customers]}"
+            
             worker = Worker()
+            worker.worker_name = data['worker_name']
+            worker.worker_role = data['worker_role']
             worker.worker_id = data['worker_id']
             worker.worker_passwd = data['worker_passwd']
             if data['worker_phone_number'] and len(data['worker_phone_number']) >= 10:
@@ -157,6 +175,7 @@ def add_worker(data):
                 return "Invalid phone number. Please provide a valid 10-digit phone number."
             worker.owner = user
             worker.save()
+            print(f"DEBUG add_worker - Worker saved successfully: {worker.worker_id}")
             return True
     except Exception as e:
         print("Error while adding worker:", e)
@@ -183,10 +202,10 @@ def remove_worker(data):
 def profit_loss_calc(data):
     try:
         user = Customer.objects.get(user_id=data['user_id'])
-        records = AddRecord.objects.filter(farm_owner=user, type='Investment')
+        records = AddRecord.objects.filter(farm_owner=user, type='Investment', status='approved')
         total_investment = sum(record.amount for record in records)
         # print(total_investment)
-        profit_records = AddRecord.objects.filter(farm_owner=user, type='Harvest')
+        profit_records = AddRecord.objects.filter(farm_owner=user, type='Harvest', status='approved')
         total_profit = sum(record.amount for record in profit_records)
         # print(total_profit)
         profit_loss = total_profit - total_investment
@@ -204,10 +223,10 @@ def profit_loss_calc(data):
 def pie_bar(data):
     try:
         user = Customer.objects.get(user_id=data['user_id'])
-        investment_records = AddRecord.objects.filter(farm_owner=user, type='Investment')
+        investment_records = AddRecord.objects.filter(farm_owner=user, type='Investment', status='approved')
         total_investment = sum(record.amount for record in investment_records)
 
-        harvest_records = AddRecord.objects.filter(farm_owner=user, type='Harvest')
+        harvest_records = AddRecord.objects.filter(farm_owner=user, type='Harvest', status='approved')
         total_harvest = sum(record.amount for record in harvest_records)
 
         profit_loss = total_harvest - total_investment
@@ -307,7 +326,7 @@ def report_download(data):
 
     today = datetime.now()
     user = Customer.objects.get(user_id=user_id)
-    queryset = AddRecord.objects.filter(farm_owner=user)
+    queryset = AddRecord.objects.filter(farm_owner=user, status='approved')
 
     if report_type == 'month':
         queryset = queryset.filter(date__year=today.year, date__month=today.month)
@@ -436,7 +455,7 @@ def future_expenses(data):
         # Fetch investment items
         item_list = AddRecord.objects.filter(
             farm_owner_id=data['user_id'], 
-            type='Investment'
+            type='Investment', status='approved'
         ).values('item_name')
 
         for i in item_list:

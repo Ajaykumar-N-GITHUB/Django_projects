@@ -123,15 +123,13 @@
 </head>
 
 <body>
-    <div class="login-container">
-        <h2>Customer/Worker Login</h2>
-        <form id="loginForm">
-            {% csrf_token %}
-            <label for="user_id">User ID</label>
-            <input type="text" name="user_id" required>
+        <div class="login-container">
+        <h1>🌾 Farm Management Login</h1>
 
-            <label for="password">Password</label>
-            <input type="password" name="password" required>
+        <form id="loginForm" method="POST">
+            {% csrf_token %}
+            <input type="text" name="user_id" placeholder="User ID" required />
+            <input type="password" name="password" placeholder="Password" required />
 
             <div class="forgot-link">
                 <a href="/user/resetpass">Forgot Password?</a>
@@ -139,9 +137,7 @@
 
             <button type="submit">Login</button>
         </form>
-
-        <div id="response-message"></div>
-    </div>
+        <div id="response-message" style="display: none;"></div>
 
     <script>
         const form = document.getElementById('loginForm');
@@ -155,25 +151,41 @@
             responseBox.textContent = "🔐 Logging in...";
 
             const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
             try {
                 const response = await fetch("/user/login", {
                     method: "POST",
                     headers: {
-                        "X-CSRFToken": csrfToken
+                        "X-CSRFToken": csrfToken,
+                        "Content-Type": "application/json"
                     },
-                    body: formData
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
 
-                if (response.status === 200) {
-                    responseBox.className = "message";
+                if (response.ok) {
+                    responseBox.className = "success";
                     responseBox.textContent = result.message || "✅ Login successful!";
-                    window.open("/dashboard/display", "_blank"); // opens in new tab
-                    // You can redirect here if needed
-                    // window.location.href = "/dashboard";
+                    
+                    // Role-specific redirection with role parameter
+                    const role = result.role;
+                    const userId = result.user_id;
+                    
+                    // Add a small delay to show success message
+                    setTimeout(() => {
+                        if (role === 'owner') {
+                            window.location.href = `/dashboard/display?role=owner&user_id=${userId}`;
+                        } else if (role === 'manager') {
+                            window.location.href = `/dashboard/display?role=manager&user_id=${userId}`;
+                        } else if (role === 'worker') {
+                            window.location.href = `/dashboard/display?role=worker&user_id=${userId}`;
+                        } else {
+                            window.location.href = "/dashboard/display";
+                        }
+                    }, 1000);
                 } else {
                     responseBox.className = "error";
                     responseBox.textContent = result.error || "❌ Login failed. Check credentials.";

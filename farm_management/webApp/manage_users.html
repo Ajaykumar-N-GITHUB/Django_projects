@@ -1,0 +1,308 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management - Farm Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6f9;
+        }
+
+        header {
+            background-color: #2e8b57;
+            padding: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            padding: 8px 15px;
+            background-color: #ff5e5e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #2e8b57;
+        }
+
+        .user-section {
+            margin-bottom: 40px;
+        }
+
+        .user-section h3 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-section.workers h3 {
+            color: #2196F3;
+            border-bottom: 2px solid #2196F3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff5e5e;
+        }
+
+        .password-cell {
+            position: relative;
+            min-width: 120px;
+        }
+
+        .password-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 8px;
+            color: #666;
+            padding: 2px;
+        }
+
+        .password-toggle:hover {
+            color: #2e8b57;
+        }
+
+        .password-text {
+            font-family: monospace;
+            display: inline-block;
+            min-width: 80px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>👥 User Management</div>
+        <a href="/dashboard/display" class="back-btn">← Back to Dashboard</a>
+    </header>
+
+    {% csrf_token %}
+
+    <div class="container">
+        <div class="card">
+            <div class="section-title">User Management System</div>
+            
+            <div id="loading" class="loading">
+                🔄 Loading user data...
+            </div>
+
+            <div id="error" class="error" style="display: none;">
+                ❌ Failed to load user data. Please try again.
+            </div>
+
+            <div id="content" style="display: none;">
+                <!-- Managers Section -->
+                <div class="user-section">
+                    <h3>🔧 Managers</h3>
+                    <table id="managers-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>ID</th>
+                                <th>Phone Number</th>
+                                <th>Password</th>
+                                <th>Date of Joining</th>
+                            </tr>
+                        </thead>
+                        <tbody id="managers-tbody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Workers Section -->
+                <div class="user-section workers">
+                    <h3>👨‍🌾 Workers</h3>
+                    <table id="workers-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>ID</th>
+                                <th>Phone Number</th>
+                                <th>Password</th>
+                                <th>Date of Joining</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workers-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+        });
+
+        async function loadUserData() {
+            try {
+                const response = await fetch('/user/manage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        owner_id: '{{ owner_id }}'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayUserData(data);
+                
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function displayUserData(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            // Display Managers
+            const managersTableBody = document.getElementById('managers-tbody');
+            managersTableBody.innerHTML = '';
+            
+            if (data.managers && data.managers.length > 0) {
+                data.managers.forEach(manager => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${manager.name || 'N/A'}</td>
+                        <td>${manager.id || 'N/A'}</td>
+                        <td>${manager.phone_number || 'N/A'}</td>
+                        <td class="password-cell">
+                            <span class="password-text" data-password="${manager.password || ''}" data-visible="false">••••••••</span>
+                            <button class="password-toggle" onclick="togglePassword(this)" title="Show/Hide Password">👁️</button>
+                        </td>
+                        <td>${manager.date_of_joining || 'N/A'}</td>
+                    `;
+                    managersTableBody.appendChild(row);
+                });
+            } else {
+                managersTableBody.innerHTML = '<tr><td colspan="5">No managers found</td></tr>';
+            }
+
+            // Display Workers
+            const workersTableBody = document.getElementById('workers-tbody');
+            workersTableBody.innerHTML = '';
+            
+            if (data.workers && data.workers.length > 0) {
+                data.workers.forEach(worker => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${worker.name || 'N/A'}</td>
+                        <td>${worker.id || 'N/A'}</td>
+                        <td>${worker.phone_number || 'N/A'}</td>
+                        <td class="password-cell">
+                            <span class="password-text" data-password="${worker.password || ''}" data-visible="false">••••••••</span>
+                            <button class="password-toggle" onclick="togglePassword(this)" title="Show/Hide Password">👁️</button>
+                        </td>
+                        <td>${worker.date_of_joining || 'N/A'}</td>
+                    `;
+                    workersTableBody.appendChild(row);
+                });
+            } else {
+                workersTableBody.innerHTML = '<tr><td colspan="5">No workers found</td></tr>';
+            }
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        }
+
+        function togglePassword(button) {
+            const passwordSpan = button.previousElementSibling;
+            const isVisible = passwordSpan.getAttribute('data-visible') === 'true';
+            const actualPassword = passwordSpan.getAttribute('data-password');
+            
+            if (isVisible) {
+                // Hide password
+                passwordSpan.textContent = '••••••••';
+                passwordSpan.setAttribute('data-visible', 'false');
+                button.textContent = '👁️';
+                button.title = 'Show Password';
+            } else {
+                // Show password
+                passwordSpan.textContent = actualPassword;
+                passwordSpan.setAttribute('data-visible', 'true');
+                button.textContent = '🙈';
+                button.title = 'Hide Password';
+            }
+        }
+    </script>
+</body>
+</html>

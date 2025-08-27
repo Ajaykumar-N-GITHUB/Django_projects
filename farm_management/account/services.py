@@ -1,5 +1,6 @@
 from account.sendemail import send_email
-from account.authentication import signup_user, login_user, reset_password
+from account.authentication import signup_user, login_user, reset_password, get_worker_manager
+from account.authentication import get_pending_records, approve_expense, reject_expense, get_all_records
 
 
 def email_sender(data):
@@ -17,4 +18,25 @@ def signup_service(data):
 
 def login_service(data):
     res = login_user(data)
+    return res
+
+def get_worker_manager_service(data):
+    res = get_worker_manager(data)
+    return res
+
+def get_pending_records_service(data):
+    res = get_pending_records(data)
+    return res
+
+
+def approve_expense_service(data):
+    res = approve_expense(data)
+    return res
+
+def reject_expense_service(data):
+    res = reject_expense(data)
+    return res
+
+def get_all_records_service(data):
+    res = get_all_records(data)
     return res

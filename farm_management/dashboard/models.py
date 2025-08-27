@@ -7,6 +7,7 @@ class AddRecord(models.Model):
 
     type = models.CharField(max_length=50, blank=False)
     item_name = models.CharField(max_length=100, blank=False)
+    worker_id = models.CharField(max_length=100, blank=False, default=None)
     farm_owner = models.ForeignKey(
     Customer,
     on_delete=models.CASCADE,
@@ -14,7 +15,7 @@ class AddRecord(models.Model):
     to_field='user_id',
     db_column='farm_owner_id'
 )
-
+    status = models.CharField(max_length=20, blank=False, default='pending')
     amount = models.FloatField(blank=False)
     date = models.DateField(blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
