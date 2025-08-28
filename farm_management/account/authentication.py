@@ -39,7 +39,9 @@ def signup_user(data):
                 return "Password must be at least 8 characters long"
             print("hello")
             customer_obj.save()
-            res = welcome_email(data)
+            
+            # Skip email sending in production to avoid timeouts
+            # You can enable this later with better email service
             return True
     except Exception as e:
         return str(e)   
@@ -52,8 +54,6 @@ def login_user(data):
         if Customer.objects.filter(user_id = data['user_id']).exists():
             user = Customer.objects.get(user_id = data['user_id'])
             if check_password(data['password'], user.password):
-                res = send_reminder()
-                resp = alert_email(data)
                 return True
             else:
                 return "Please check the credentials"
