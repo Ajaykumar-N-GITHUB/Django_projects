@@ -44,8 +44,6 @@ genai_apikey = os.environ.get("genai_key")
 subscription_key = os.environ.get("azure_key")
 
 
-
-
 nlp = spacy.load("en_core_web_sm")
 model_path = os.path.join(settings.BASE_DIR, 'farm_management', 'rf_expense_model.pkl')
 encoder_path = os.path.join(settings.BASE_DIR, 'farm_management', 'label_encoder.pkl')
@@ -268,49 +266,66 @@ def send_reminder():
         subject = "Reminder from Farm Management"
         today_date = timezone.localtime(timezone.now()).date()
 
-        # ✅ Get all reminders for today
-        reminders_today = Reminder.objects.filter(date=today_date)
+        # ✅ Get all reminders for today - LIMIT to prevent memory issues
+        reminders_today = Reminder.objects.filter(date=today_date)[:5]  # Max 5 reminders
 
         if not reminders_today.exists():
             # print("No reminders for today")
             return "No reminders"
 
-        # ✅ Setup SMTP connection once
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
+        # ✅ Setup SMTP connection once with timeout
+        server = None
+        try:
+            server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
+            server.starttls()
+            server.login(sender_email, sender_password)
 
-        for reminder in reminders_today:
-            user = reminder.user  # assuming Reminder has a ForeignKey to Customer
-            receiver_email = user.email
-            reminder_message = reminder.message
+            for reminder in reminders_today:
+                try:
+                    user = reminder.user  # assuming Reminder has a ForeignKey to Customer
+                    receiver_email = user.email
+                    reminder_message = reminder.message
 
-            # Email body
-            body = f"""
-            Dear {user.name},
+                    # Email body
+                    body = f"""
+                    Dear {user.name},
 
-            This is a reminder for your upcoming task: {reminder_message}.
+                    This is a reminder for your upcoming task: {reminder_message}.
 
-            Best regards,
-            Farm Management Team
-            """
+                    Best regards,
+                    Farm Management Team
+                    """
 
-            msg = MIMEMultipart()
-            msg['From'] = sender_email
-            msg['To'] = receiver_email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(body, 'plain'))
+                    msg = MIMEMultipart()
+                    msg['From'] = sender_email
+                    msg['To'] = receiver_email
+                    msg['Subject'] = subject
+                    msg.attach(MIMEText(body, 'plain'))
 
-            try:
-                print(f"Sending reminder email to {receiver_email}...")
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-                print(f"Reminder email sent to {receiver_email}")
+                    print(f"Sending reminder email to {receiver_email}...")
+                    server.sendmail(sender_email, receiver_email, msg.as_string())
+                    print(f"Reminder email sent to {receiver_email}")
 
-            except Exception as e:
-                print(f"Failed to send email to {receiver_email}: {e}")
+                except Exception as e:
+                    print(f"Failed to send email to {receiver_email}: {e}")
+                    continue  # Continue with next reminder
 
-        server.quit()
+        except Exception as e:
+            print(f"SMTP connection error: {e}")
+            return f"SMTP error: {str(e)}"
+        finally:
+            # Always close connection to free memory
+            if server:
+                try:
+                    server.quit()
+                except:
+                    pass
+
         return True
+
+    except Exception as e:
+        print("Error while sending reminders:", e)
+        return str(e)
 
     except Exception as e:
         print("Error while sending reminders:", e)

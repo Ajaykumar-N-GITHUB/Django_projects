@@ -63,19 +63,26 @@ def welcome_email(data):
 
     message.attach(MIMEText(body, 'plain'))
 
+    server = None
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        # server.set_debuglevel(1)
+        # Add timeout to prevent hanging
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
         server.starttls() 
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
         return True
 
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Email error: {e}")
+        return False
 
     finally:
-        server.quit()
+        # Always close connection to free memory
+        if server:
+            try:
+                server.quit()
+            except:
+                pass
 
 def alert_email(data):
     print("Sending Alert email...")
@@ -99,16 +106,23 @@ def alert_email(data):
 
     message.attach(MIMEText(body, 'plain'))
 
+    server = None
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        # server.set_debuglevel(1)
+        # Add timeout to prevent hanging
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
         server.starttls() 
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
         return True
 
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Alert email error: {e}")
+        return False
 
     finally:
-        server.quit()
+        # Always close connection to free memory
+        if server:
+            try:
+                server.quit()
+            except:
+                pass
