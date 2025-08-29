@@ -1,128 +1,42 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from rest_framework.response import Response
 from rest_framework import status
 from account.models import Customer
-
-
-def send_email(data):
-    print("Sending email...")
-    sender_email = "ajayjothika17@gmail.com"
-    sender_password = "herp ioyd scad tvgl" 
-    receiver_email = "ajayjothika17@gmail.com"
-
-   
-    subject = "Farm Management - Customer Support"
-    body = data['message'] + "\n\n" + \
-           "Name: " + data['name'] + "\n" + \
-           "Sender Email: " + data['email'] + "\n" 
-
-    
-    message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = receiver_email
-    message['Subject'] = subject
-
-    message.attach(MIMEText(body, 'plain'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        # server.set_debuglevel(1)
-        server.starttls() 
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-        return Response({'message': "Email sent Successfully. Our IT team will get back to you soon!!!"}, status=status.HTTP_201_CREATED)
-
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    finally:
-        server.quit()
+from django.core.mail import EmailMessage
+from django.core.mail import send_mail
 
 
 
-def welcome_email(data):
-    print("Sending Welcome email...")
+def send_support_request(data):
+    print("Sending support email...")
     print(data)
-    sender_email = "ajayjothika17@gmail.com"
-    sender_password = "herp ioyd scad tvgl"
-    cust = Customer.objects.get(user_id=data['user_id'])
-    receiver_email = cust.email
+    email = EmailMessage(
+        subject=f"Support request from {data['name']}",
+        body=data['message'],
+        from_email=data['email'], 
+        to=["ajayjothika17@gmail.com"],
+    )
+    email.send()
 
-    subject = "Farm Management - Welcome"
-    body = "Dear " + cust.name + ",\n\n" + \
-           "Welcome to Farm Management! We're glad to have you on board." + "\n\n" + \
-           "Regards" + "\n" + \
-           "Farm Management Team"
 
-    message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = receiver_email
-    message['Subject'] = subject
 
-    message.attach(MIMEText(body, 'plain'))
+# def send_alert_email(data):
+#     cust = Customer.objects.get(user_id=data['user_id'])
+#     receiver_email = cust.email
+#     subject = "Login Alert"
+#     message = f"Hi {data['name']},\n\nA login was detected to your account."
+#     send_mail(subject, message, None, [receiver_email])
 
-    server = None
-    try:
-        # Add timeout to prevent hanging
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
-        server.starttls() 
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-        return True
 
-    except Exception as e:
-        print(f"Email error: {e}")
-        return False
+# def send_reminder_email(user, reminder_message):
+#     subject = "Farm Reminder"
+#     message = f"Hi {user.name},\n\nThis is a reminder: {reminder_message}"
+#     send_mail(subject, message, None, [user.email])
 
-    finally:
-        # Always close connection to free memory
-        if server:
-            try:
-                server.quit()
-            except:
-                pass
 
-def alert_email(data):
-    print("Sending Alert email...")
-    print(data)
-    cust = Customer.objects.get(user_id=data['user_id'])
-    sender_email = "ajayjothika17@gmail.com"
-    sender_password = "herp ioyd scad tvgl" 
-    receiver_email = cust.email
 
-    subject = "Farm Management - Customer Support"
-    body = "Dear " + cust.name + ",\n\n" + \
-           "Alert!!: There is a login alert from your account" + "\n" + \
-           "If this was not you, please contact support immediately." + "\n\n" + \
-           "Regards" + "\n" + \
-           "Farm Management Team"
+# def send_welcome_email(data):
+#     cust = Customer.objects.get(user_id=data['user_id'])
+#     receiver_email = cust.email
+#     subject = "Welcome to Farm Management!"
+#     message = f"Hi {data['name']},\n\nThank you for signing up."
+#     send_mail(subject, message, None, [receiver_email])
 
-    message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = receiver_email
-    message['Subject'] = subject
-
-    message.attach(MIMEText(body, 'plain'))
-
-    server = None
-    try:
-        # Add timeout to prevent hanging
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
-        server.starttls() 
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-        return True
-
-    except Exception as e:
-        print(f"Alert email error: {e}")
-        return False
-
-    finally:
-        # Always close connection to free memory
-        if server:
-            try:
-                server.quit()
-            except:
-                pass

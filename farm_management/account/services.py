@@ -1,10 +1,10 @@
-from account.sendemail import send_email
+from account.sendemail import *
 from account.authentication import signup_user, login_user, reset_password, get_worker_manager
 from account.authentication import get_pending_records, approve_expense, reject_expense, get_all_records
 
 
 def email_sender(data):
-    res = send_email(data)
+    res = send_support_request(data)
     return res
 
 def reset_password_service(data):
