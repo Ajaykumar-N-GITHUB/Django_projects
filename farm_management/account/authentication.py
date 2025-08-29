@@ -4,8 +4,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.response import Response
 from rest_framework import status
 from dashboard.record_operations import send_reminder
-from account.sendemail import alert_email, welcome_email
-
+from account.sendemail import *
 
 def signup_user(data):
     try:
