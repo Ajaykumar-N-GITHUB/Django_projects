@@ -1,21 +1,14 @@
-from rest_framework import status
-from account.models import Customer
-from django.core.mail import EmailMessage
 from django.core.mail import send_mail
-
-
+from django.conf import settings
 
 def send_support_request(data):
-    print("Sending support email...")
     print(data)
-    email = EmailMessage(
-        subject=f"Support request from {data['name']}",
-        body=data['message'],
-        from_email=data['email'], 
-        to=["ajayjothika17@gmail.com"],
-    )
-    email.send()
+    subject = "Farm Management Support"
+    message = data['message']
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [data['email']]
 
+    send_mail(subject, message, from_email, recipient_list, fail_silently=False)
 
 
 # def send_alert_email(data):

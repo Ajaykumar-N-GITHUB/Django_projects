@@ -1,5 +1,5 @@
 from django.db import models
-from account.models import Customer
+from account.models import Customer, Worker
 # Create your models here.
 
 
@@ -63,3 +63,28 @@ class TaskLog(models.Model):
 
     class Meta:
         db_table = "task_logs"
+
+
+class Attendance(models.Model):
+    STATUS_CHOICES = [
+        ("Present", "Present"),
+        ("Absent", "Absent"),
+        ("Leave", "Leave"),
+    ]
+
+    worker = models.ForeignKey(
+        Worker,                     # assumes you already have a Worker model
+        on_delete=models.CASCADE,
+        related_name="attendances"
+    )
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    remarks = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "attendance_list"
+        unique_together = ("worker", "date")   # one record per worker per day
+        ordering = ["-date"]

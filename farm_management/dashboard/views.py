@@ -2,13 +2,20 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from dashboard.liveweather import get_weather
 from dashboard.services import add_record_services, fetch_record_services, profit_loss_services, delete_record_services, worker_dashboard_services
-from dashboard.services import set_reminder_services, pie_bar_services, future_expenses_services, report_download_services, update_record_services
-from dashboard.services import add_worker_services, remove_worker_services, worker_long_input_services, log_download_services
+from dashboard.services import set_reminder_services, pie_bar_services, future_expenses_services, report_download_services, update_record_services, add_attendance_services
+from dashboard.services import add_worker_services, remove_worker_services, worker_long_input_services, log_download_services, fetch_attendance_services,get_worker_services
 from rest_framework.response import Response
 from rest_framework import status
 from account.models import Customer, Worker
 from account.auth_utils import role_required, get_user_role
 from account.session_utils import get_current_user_session, validate_user_permission, get_user_context, get_user_from_role_session
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from datetime import datetime, timedelta
+from dashboard.models import Attendance
+from account.models import Worker
+from django.utils import timezone
 
 def get_safe_current_user(request, required_role=None):
     """
@@ -330,6 +337,23 @@ class RemoveWorkerView(APIView):
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
         
 
+class FetchWorkersView(APIView):
+
+    def get(self, request):
+        current_user = get_user_from_role_session(request, 'owner')
+        if current_user is None:
+            return Response({"error": "Owner session not found"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        data = request.query_params.copy()
+        data['user_id'] = current_user.get('user_id')
+        res = get_worker_services(data)
+
+        if res is not None:
+            return Response(res, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Worker not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
 class WorkerLongInputView(APIView):
 
     def post(self, request):
@@ -368,3 +392,153 @@ class LogDownloadView(APIView):
             return Response({"error": "No logs found for this worker"}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"error": res}, status=status.HTTP_400_BAD_REQUEST)
+
+class AddAttendanceView(APIView):
+
+    def post(self, request):
+        # Check if user has owner permissions
+        if not validate_user_permission(request, 'owner'):
+            return Response({"success": False, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        current_user = get_user_from_role_session(request, 'owner')
+        if current_user is None:
+            return Response({"success": False, "message": "Owner session not found"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        data = request.data.copy()
+        data['user_id'] = current_user.get('user_id')
+        
+        # Call the service and get the structured response
+        res = add_attendance_services(data)
+        # Check if the response is a dictionary with success status
+        if isinstance(res, dict) and 'success' in res:
+            if res['success']:
+                return Response(res, status=status.HTTP_201_CREATED)
+            else:
+                return Response(res, status=status.HTTP_400_BAD_REQUEST)
+        # If the old format is still returned (just True or error string)
+        elif res is True:
+            return Response({
+                "success": True,
+                "message": "Attendance added successfully"
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "success": False, 
+                "message": str(res)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class FetchAttendanceView(APIView):
+
+    def get(self, request):
+        if not validate_user_permission(request, 'owner'):
+            return Response({"success": False, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        current_user = get_user_from_role_session(request, 'owner')
+        if current_user is None:
+            return Response({"success": False, "message": "Owner session not found"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        data = request.data.copy()
+        data['user_id'] = current_user.get('user_id')
+        # Add filters if present in request
+        if 'date' in request.query_params:
+            data['date'] = request.query_params.get('date')
+        if 'worker_id' in request.query_params:
+            data['worker_id'] = request.query_params.get('worker_id')
+            
+        # Get attendance data
+        res = fetch_attendance_services(data)
+        # print(res)
+        # Check if response is a dictionary with success key
+        if isinstance(res, dict) and 'success' in res:
+            if res['success']:
+                return Response(res, status=status.HTTP_200_OK)
+            else:
+                return Response(res, status=status.HTTP_400_BAD_REQUEST)
+        # Handle legacy format (just returning data directly or error string)
+        elif isinstance(res, list) or res is True:
+            return Response({
+                "success": True,
+                "message": "Attendance fetched successfully",
+                "attendance": res if isinstance(res, list) else []
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "success": False,
+                "message": str(res) if res else "Failed to fetch attendance"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+@csrf_exempt
+def calculate_salary(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            worker_id = data.get('worker_id')
+            salary_per_day = data.get('salary_per_day')
+            bonus = data.get('bonus', 0)
+            owner_id = data.get('owner_id')
+            
+            # Validate inputs
+            if not worker_id or not salary_per_day:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Worker ID and Salary Per Day are required'
+                })
+            
+            # Get the worker
+            try:
+                worker = Worker.objects.get(worker_id=worker_id, owner__user_id=owner_id)
+            except Worker.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Worker with ID {worker_id} not found'
+                })
+            
+            # Get today's date
+            today = timezone.now().date()
+            
+            # Calculate the first day of the current month
+            first_day_of_month = today.replace(day=1)
+            
+            # Calculate the attendance for the current month
+            attendance_records = Attendance.objects.filter(
+                worker=worker,
+                date__gte=first_day_of_month,
+                date__lte=today
+            )
+            
+            # Count days by status
+            present_days = attendance_records.filter(status='Present').count()
+            leave_days = attendance_records.filter(status='Leave').count()
+            absent_days = attendance_records.filter(status='Absent').count()
+            
+            # Calculate the base salary (only present days count)
+            base_salary = present_days * salary_per_day
+            
+            # Calculate total salary
+            total_salary = base_salary + bonus
+            
+            return JsonResponse({
+                'success': True,
+                'worker_id': worker_id,
+                'worker_name': worker.worker_name,
+                'present_days': present_days,
+                'leave_days': leave_days,
+                'absent_days': absent_days,
+                'base_salary': base_salary,
+                'bonus': bonus,
+                'total_salary': total_salary,
+                'month': today.strftime('%B %Y')
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error calculating salary: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid request method'
+    })

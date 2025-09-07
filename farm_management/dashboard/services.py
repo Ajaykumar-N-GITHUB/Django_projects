@@ -1,6 +1,6 @@
 from dashboard.record_operations import add_record, get_records, update_record, \
 profit_loss_calc, delete_record, set_reminder, pie_bar, future_expenses, report_download, worker_dashboard, \
-add_worker, remove_worker, add_long_input, log_download
+add_worker, remove_worker, add_long_input, log_download, get_attendance, get_workers, add_attendance
 from dashboard.models import Customer
 
 
@@ -59,4 +59,16 @@ def worker_long_input_services(data):
 
 def log_download_services(data):
     res = log_download(data)
+    return res
+
+def fetch_attendance_services(data):
+    res = get_attendance(data)
+    return res
+
+def get_worker_services(data):
+    res = get_workers(data)
+    return res
+
+def add_attendance_services(data):
+    res = add_attendance(data)
     return res

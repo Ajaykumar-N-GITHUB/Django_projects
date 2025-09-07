@@ -1,6 +1,6 @@
 from pydoc import doc, text
 from urllib import response
-from dashboard.models import AddRecord
+from dashboard.models import AddRecord, Attendance
 from account.models import Customer, Worker
 import smtplib
 import joblib
@@ -82,7 +82,6 @@ def add_record(data):
     except Exception as e:
         print("Error while adding record:", e)
         return str(e)   
-
     return True
 
 def get_records(data):
@@ -90,7 +89,6 @@ def get_records(data):
         user = Customer.objects.get(user_id=data['user_id'])
         records = AddRecord.objects.filter(farm_owner=user, status='approved')
 
-        
         items = []
         for r in records:
             items.append({
@@ -105,7 +103,6 @@ def get_records(data):
         print("Error while fetching records:", e)
         return str(e)
     
-
 
 def update_record(data):
     try:
@@ -138,6 +135,174 @@ def delete_record(data):
     except Exception as e:
         return str(e)
 
+
+def add_attendance(data):
+    try:
+        print(data)
+        user = Customer.objects.get(user_id=data['user_id'])
+        
+        # Check if worker exists
+        try:
+            worker = Worker.objects.get(worker_id=data['worker_id'], owner=user)
+        except Worker.DoesNotExist:
+            return {
+                "success": False,
+                "message": f"Worker with ID {data['worker_id']} not found for this user"
+            }
+        
+        # Check if attendance already exists for this date and worker
+        existing_attendance = Attendance.objects.filter(
+            worker=worker,
+            date=data['date']
+        ).first()
+        
+        if existing_attendance:
+            # Update existing record
+            existing_attendance.status = data['status']
+            if 'remarks' in data and data['remarks']:
+                existing_attendance.remarks = data['remarks']
+            existing_attendance.save()
+            return {
+                "success": True,
+                "message": "Attendance record updated successfully",
+                "data": {
+                    "id": existing_attendance.id,
+                    "worker_id": worker.worker_id,
+                    "worker_name": worker.worker_name,
+                    "date": data['date'],
+                    "status": data['status']
+                }
+            }
+        
+        # Create new attendance record
+        attendance = Attendance()
+        attendance.worker = worker
+        attendance.date = data['date']
+        attendance.status = data['status']
+        if 'remarks' in data and data['remarks']:
+            attendance.remarks = data['remarks']
+        attendance.save()
+        
+        return {
+            "success": True,
+            "message": "Attendance added successfully",
+            "data": {
+                "id": attendance.id,
+                "worker_id": worker.worker_id,
+                "worker_name": worker.worker_name,
+                "date": data['date'],
+                "status": data['status']
+            }
+        }
+    except Exception as e:
+        print("Error while adding attendance:", e)
+        return {
+            "success": False,
+            "message": str(e)
+        }
+
+def get_attendance(data):
+    print("DEBUG get_attendance - Input data:")
+    print(data)
+    try:
+        user = Customer.objects.get(user_id=data['user_id'])
+        
+        # Base query
+        query = Attendance.objects.filter(worker__owner=user)
+        
+        # Apply date filters - default to current month if not specified
+        if 'date' in data and data['date']:
+            # If exact date is provided, filter by that date
+            query = query.filter(date=data['date'])
+        elif 'start_date' in data and data['start_date'] and 'end_date' in data and data['end_date']:
+            # If start and end dates are provided, filter by date range
+            query = query.filter(date__gte=data['start_date'], date__lte=data['end_date'])
+        elif 'month' in data and data['month'] and 'year' in data and data['year']:
+            # If month and year are provided, filter by month
+            query = query.filter(date__month=data['month'], date__year=data['year'])
+        elif 'year' in data and data['year']:
+            # If only year is provided, filter by year
+            query = query.filter(date__year=data['year'])
+        else:
+            # Default: current month
+            today = datetime.now()
+            query = query.filter(date__month=today.month, date__year=today.year)
+            
+        # Filter by worker if specified
+        if 'worker_id' in data and data['worker_id']:
+            query = query.filter(worker__worker_id=data['worker_id'])
+            
+        # Filter by status if specified
+        if 'status' in data and data['status']:
+            query = query.filter(status=data['status'])
+        
+        # Apply sorting - newest first by default
+        query = query.order_by('-date')
+        
+        # Apply pagination
+        page = int(data.get('page', 1))
+        page_size = int(data.get('page_size', 7))  # Default to 7 records per page
+
+        # Calculate pagination
+        total_records = query.count()
+        total_pages = (total_records + page_size - 1) // page_size  # Ceiling division
+        
+        # Get records for current page
+        start = (page - 1) * page_size
+        end = start + page_size
+        attendance_records = query.select_related('worker')[start:end]
+        
+        items = []
+        for r in attendance_records:
+            items.append({
+                'id': r.id,
+                'worker_id': r.worker.worker_id,
+                'worker_name': r.worker.worker_name,
+                'date': r.date.strftime('%Y-%m-%d'),
+                'status': r.status,
+                'remarks': r.remarks if hasattr(r, 'remarks') else None
+            })
+            
+        # Calculate summary statistics (for current page only)
+        present_count = sum(1 for r in items if r['status'] == 'Present')
+        absent_count = sum(1 for r in items if r['status'] == 'Absent')
+        leave_count = sum(1 for r in items if r['status'] == 'Leave')
+        
+        # Calculate summary for all matching records (not just current page)
+        all_present = query.filter(status='Present').count()
+        all_absent = query.filter(status='Absent').count() 
+        all_leave = query.filter(status='Leave').count()
+        
+        return {
+            'success': True,
+            'message': 'Attendance records fetched successfully',
+            'attendance': items,
+            'pagination': {
+                'current_page': page,
+                'total_pages': total_pages,
+                'page_size': page_size,
+                'total_records': total_records
+            },
+            'summary': {
+                'present': present_count,
+                'absent': absent_count,
+                'leave': leave_count,
+                'total': len(items)
+            },
+            'overall_summary': {
+                'present': all_present,
+                'absent': all_absent,
+                'leave': all_leave,
+                'total': total_records
+            }
+        }
+    except Exception as e:
+        print("Error while fetching attendance records:", e)
+        return {
+            'success': False,
+            'message': str(e),
+            'attendance': []
+        }
 
 
 def add_worker(data):
@@ -197,6 +362,20 @@ def remove_worker(data):
         return str(e)
 
 
+def get_workers(data):
+    all_workers = Worker.objects.filter(owner__user_id=data['user_id'], worker_role='worker')
+
+    res = {
+        "success": True,
+        "workers": [
+            {"id": worker.worker_id, "name": worker.worker_name}
+            for worker in all_workers
+        ]
+    }
+    return res
+
+
+
 def profit_loss_calc(data):
     try:
         user = Customer.objects.get(user_id=data['user_id'])
@@ -238,7 +417,6 @@ def pie_bar(data):
 
     except Exception as e:
         return str(e)
-
 
 
 def set_reminder(data):

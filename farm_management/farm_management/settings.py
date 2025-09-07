@@ -168,16 +168,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.sendgrid.net"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+
+# # Always use this as username
+# EMAIL_HOST_USER = "apikey"  
+
+# # Your SendGrid API Key (looks like: SG.xxxxxxx)
+# EMAIL_HOST_PASSWORD = os.environ.get("SENDGRID_API_KEY")
+
+# DEFAULT_FROM_EMAIL = "Farm Management <noreply@yourdomain.com>"
+
+
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
-# Always use this as username
-EMAIL_HOST_USER = "apikey"  
-
-# Your SendGrid API Key (looks like: SG.xxxxxxx)
-EMAIL_HOST_PASSWORD = os.environ.get("SENDGRID_API_KEY")
-
-DEFAULT_FROM_EMAIL = "Farm Management <noreply@yourdomain.com>"
-
+EMAIL_HOST_USER = "ajayjothika17@gmail.com"
+EMAIL_HOST_PASSWORD = "herp ioyd scad tvgl"
+DEFAULT_FROM_EMAIL = "Farm Management <ajayjothika17@gmail.com>"

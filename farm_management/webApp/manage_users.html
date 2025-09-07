@@ -193,6 +193,79 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Salary Calculation Section -->
+                <div class="user-section salary">
+                    <h3>💰 Salary Calculation</h3>
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Worker ID:</label>
+                                <select id="salary-worker-id" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="">Select Worker</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Salary Per Day (₹):</label>
+                                <input type="number" id="salary-per-day" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter amount">
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Bonus (₹):</label>
+                                <input type="number" id="salary-bonus" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Optional" value="0">
+                            </div>
+                            <div style="flex: 0 0 auto;">
+                                <button id="calculate-salary-btn" onclick="calculateSalary()" style="padding: 10px 20px; background-color: #2e8b57; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                                    Calculate Salary
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Salary Calculation Results -->
+                    <div id="salary-result" style="display: none; background: #e8f5e9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin-top: 0; color: #2e8b57;">Salary Calculation Results</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Worker Name:</p>
+                                <p id="result-worker-name">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Present Days:</p>
+                                <p id="result-present-days">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Leave Days:</p>
+                                <p id="result-leave-days">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Absent Days:</p>
+                                <p id="result-absent-days">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Base Salary:</p>
+                                <p id="result-base-salary">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Bonus:</p>
+                                <p id="result-bonus">-</p>
+                            </div>
+                            <div>
+                                <p style="font-weight: 500; margin-bottom: 5px;">Total Salary:</p>
+                                <p id="result-total-salary" style="font-weight: 600; color: #2e8b57; font-size: 18px;">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Salary Calculation Error -->
+                    <div id="salary-error" style="display: none; background: #ffebee; padding: 20px; border-radius: 8px; color: #d32f2f;">
+                        <p style="margin: 0; font-weight: 500;">Failed to calculate salary. Please try again.</p>
+                    </div>
+                    
+                    <!-- Salary Calculation Loading -->
+                    <div id="salary-loading" style="display: none; text-align: center; padding: 20px;">
+                        🔄 Calculating salary...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -260,6 +333,10 @@
             const workersTableBody = document.getElementById('workers-tbody');
             workersTableBody.innerHTML = '';
             
+            // Get the salary worker dropdown for populating
+            const salaryWorkerDropdown = document.getElementById('salary-worker-id');
+            salaryWorkerDropdown.innerHTML = '<option value="">Select Worker</option>';
+            
             if (data.workers && data.workers.length > 0) {
                 data.workers.forEach(worker => {
                     const row = document.createElement('tr');
@@ -274,6 +351,12 @@
                         <td>${worker.date_of_joining || 'N/A'}</td>
                     `;
                     workersTableBody.appendChild(row);
+                    
+                    // Add worker to salary dropdown
+                    const option = document.createElement('option');
+                    option.value = worker.id;
+                    option.textContent = `${worker.name} (${worker.id})`;
+                    salaryWorkerDropdown.appendChild(option);
                 });
             } else {
                 workersTableBody.innerHTML = '<tr><td colspan="5">No workers found</td></tr>';
@@ -301,6 +384,76 @@
                 passwordSpan.setAttribute('data-visible', 'true');
                 button.textContent = '🙈';
                 button.title = 'Hide Password';
+            }
+        }
+
+        async function calculateSalary() {
+            const workerId = document.getElementById('salary-worker-id').value;
+            const salaryPerDay = document.getElementById('salary-per-day').value;
+            const bonus = document.getElementById('salary-bonus').value || 0;
+            
+            // Validate inputs
+            if (!workerId) {
+                alert('Please select a worker');
+                return;
+            }
+            
+            if (!salaryPerDay || salaryPerDay <= 0) {
+                alert('Please enter a valid salary per day');
+                return;
+            }
+            
+            // Show loading, hide results and error
+            document.getElementById('salary-loading').style.display = 'block';
+            document.getElementById('salary-result').style.display = 'none';
+            document.getElementById('salary-error').style.display = 'none';
+            
+            try {
+                const response = await fetch('/dashboard/calculate_salary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        worker_id: workerId,
+                        salary_per_day: parseFloat(salaryPerDay),
+                        bonus: parseFloat(bonus),
+                        owner_id: '{{ owner_id }}'
+                    })
+                });
+                
+                // Hide loading
+                document.getElementById('salary-loading').style.display = 'none';
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show results
+                    document.getElementById('salary-result').style.display = 'block';
+                    
+                    // Populate results
+                    document.getElementById('result-worker-name').textContent = data.worker_name;
+                    document.getElementById('result-present-days').textContent = data.present_days;
+                    document.getElementById('result-leave-days').textContent = data.leave_days;
+                    document.getElementById('result-absent-days').textContent = data.absent_days;
+                    document.getElementById('result-base-salary').textContent = `₹${data.base_salary.toLocaleString()}`;
+                    document.getElementById('result-bonus').textContent = `₹${data.bonus.toLocaleString()}`;
+                    document.getElementById('result-total-salary').textContent = `₹${data.total_salary.toLocaleString()}`;
+                } else {
+                    // Show error
+                    document.getElementById('salary-error').style.display = 'block';
+                    document.getElementById('salary-error').textContent = data.message || 'Failed to calculate salary';
+                }
+            } catch (error) {
+                console.error('Error calculating salary:', error);
+                // Show error
+                document.getElementById('salary-loading').style.display = 'none';
+                document.getElementById('salary-error').style.display = 'block';
             }
         }
     </script>
