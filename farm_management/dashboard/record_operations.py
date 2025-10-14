@@ -29,7 +29,7 @@ from reportlab.platypus import (
 )
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-
+from twilio.rest import Client
 from django.utils.timezone import now, timedelta
 from dashboard.models import AddRecord, TaskLog
 import spacy
@@ -42,6 +42,8 @@ import google.generativeai as genai
 
 genai_apikey = os.environ.get("genai_key")
 subscription_key = os.environ.get("azure_key")
+
+
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -438,78 +440,24 @@ def set_reminder(data):
         return str(e)
 
 def send_reminder():
-    try:
-        sender_email = "ajayjothika17@gmail.com"
-        sender_password = "herp ioyd scad tvgl"
-        subject = "Reminder from Farm Management"
-        today_date = timezone.localtime(timezone.now()).date()
+    pass
+    # account_sid = 'YOUR_TWILIO_ACCOUNT_SID'
+    # auth_token = 'YOUR_TWILIO_AUTH_TOKEN'
+    # from_phone = 'YOUR_TWILIO_PHONE_NUMBER'
+    # client = Client(account_sid, auth_token)
+    # try:
+    #     sms = client.messages.create(
+    #     body=message,
+    #     from_=from_phone,
+    #     to=to_phone
+    #     )
+    #     print(f"SMS sent to {to_phone}: SID={sms.sid}")
+    #     return True
+    # except Exception as e:
+    #     print(f"Error sending SMS: {e}")
+    #     return False
 
-        # ✅ Get all reminders for today - LIMIT to prevent memory issues
-        reminders_today = Reminder.objects.filter(date=today_date)[:5]  # Max 5 reminders
-
-        if not reminders_today.exists():
-            # print("No reminders for today")
-            return "No reminders"
-
-        # ✅ Setup SMTP connection once with timeout
-        server = None
-        try:
-            server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
-            server.starttls()
-            server.login(sender_email, sender_password)
-
-            for reminder in reminders_today:
-                try:
-                    user = reminder.user  # assuming Reminder has a ForeignKey to Customer
-                    receiver_email = user.email
-                    reminder_message = reminder.message
-
-                    # Email body
-                    body = f"""
-                    Dear {user.name},
-
-                    This is a reminder for your upcoming task: {reminder_message}.
-
-                    Best regards,
-                    Farm Management Team
-                    """
-
-                    msg = MIMEMultipart()
-                    msg['From'] = sender_email
-                    msg['To'] = receiver_email
-                    msg['Subject'] = subject
-                    msg.attach(MIMEText(body, 'plain'))
-
-                    print(f"Sending reminder email to {receiver_email}...")
-                    server.sendmail(sender_email, receiver_email, msg.as_string())
-                    print(f"Reminder email sent to {receiver_email}")
-
-                except Exception as e:
-                    print(f"Failed to send email to {receiver_email}: {e}")
-                    continue  # Continue with next reminder
-
-        except Exception as e:
-            print(f"SMTP connection error: {e}")
-            return f"SMTP error: {str(e)}"
-        finally:
-            # Always close connection to free memory
-            if server:
-                try:
-                    server.quit()
-                except:
-                    pass
-
-        return True
-
-    except Exception as e:
-        print("Error while sending reminders:", e)
-        return str(e)
-
-    except Exception as e:
-        print("Error while sending reminders:", e)
-        return str(e)
-    
-
+        
 def report_download(data):
     report_type = data.get('type')
     user_id = data.get('user_id')
@@ -655,7 +603,7 @@ def future_expenses(data):
             sentences.append(i['item_name'])
 
         genai.configure(api_key=genai_apikey)
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
 
         prompt = f"""
         You are an assistant that extracts structured farming expenses. 
@@ -713,7 +661,7 @@ def detect_type(sentence):
 
     genai.configure(api_key=genai_apikey)
 
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
     prompt = f"""
     You are a classifier for agricultural sentences.
@@ -744,7 +692,7 @@ def detect_item_amount(sentence):
 
     genai.configure(api_key=genai_apikey)
 
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
     prompt = f"""
     You are an assistant for a farm management system. 
@@ -848,7 +796,7 @@ def add_long_input(data):
 
 
     # Choose model that supports audio
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
     # Get the uploaded audio file (InMemoryUploadedFile)
     audio_file = data["audio"]  # because QueryDict gives a list

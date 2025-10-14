@@ -134,12 +134,65 @@
             display: inline-block;
             min-width: 80px;
         }
+
+        /* Owner Details Styles */
+        .user-section.owner {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-section.owner label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .user-section.owner input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .user-section.owner button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .user-section.owner #edit-owner-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .user-section.owner #save-owner-btn {
+            background-color: #2e8b57;
+            color: white;
+            display: none;
+        }
+
+        .user-section.owner #owner-details-message {
+            margin-top: 10px;
+            color: #2e8b57;
+            display: none;
+        }
+
+        .user-section.owner #owner-details-error {
+            margin-top: 10px;
+            color: #ff5e5e;
+            display: none;
+        }
     </style>
 </head>
 
 <body>
     <header>
-        <div>👥 User Management</div>
+        <div>User Management</div>
         <a href="/dashboard/display" class="back-btn">← Back to Dashboard</a>
     </header>
 
@@ -158,6 +211,49 @@
             </div>
 
             <div id="content" style="display: none;">
+                <!-- Owner Details Section -->
+                <div class="user-section owner">
+                    <h3>👑 Owner Details</h3>
+                    <form id="owner-details-form" onsubmit="event.preventDefault(); saveOwnerDetails();">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+                            <div>
+                                <label>Name:</label>
+                                <input type="text" id="owner-name" name="name" disabled>
+                            </div>
+                            <div>
+                                <label>Owner ID:</label>
+                                <input type="text" id="owner-id" name="id" disabled>
+                            </div>
+                            <div>
+                                <label>Address:</label>
+                                <input type="text" id="owner-address" name="address" disabled>
+                            </div>
+                            <div>
+                                <label>Farm Size (acres):</label>
+                                <input type="number" id="owner-farm-size" name="farm_size" min="0" step="0.01" disabled>
+                            </div>
+                            <div>
+                                <label>Mobile:</label>
+                                <input type="text" id="owner-mobile" name="mobile" disabled>
+                            </div>
+                            <div>
+                                <label>Email:</label>
+                                <input type="email" id="owner-email" name="email" disabled>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button type="button" id="edit-owner-btn" onclick="toggleOwnerEdit()" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                                Edit
+                            </button>
+                            <button type="submit" id="save-owner-btn" style="padding: 10px 20px; background-color: #2e8b57; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; display: none;">
+                                Save
+                            </button>
+                        </div>
+                        <div id="owner-details-message" style="margin-top: 10px; color: #2e8b57; display: none;"></div>
+                        <div id="owner-details-error" style="margin-top: 10px; color: #ff5e5e; display: none;"></div>
+                    </form>
+                </div>
+
                 <!-- Managers Section -->
                 <div class="user-section">
                     <h3>🔧 Managers</h3>
@@ -275,6 +371,82 @@
             loadUserData();
         });
 
+        async function loadOwnerDetails() {
+            try {
+                const response = await fetch('/dashboard/owner_details', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to fetch owner details');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('owner-name').value = data.name || '';
+                    document.getElementById('owner-id').value = data.id || '';
+                    document.getElementById('owner-address').value = data.address || '';
+                    document.getElementById('owner-farm-size').value = data.farm_size || '';
+                    document.getElementById('owner-mobile').value = data.mobile || '';
+                    document.getElementById('owner-email').value = data.email || '';
+                }
+            } catch (error) {
+                document.getElementById('owner-details-error').textContent = 'Could not load owner details.';
+                document.getElementById('owner-details-error').style.display = 'block';
+            }
+        }
+
+        function toggleOwnerEdit() {
+            document.getElementById('owner-name').disabled = false;
+            document.getElementById('owner-address').disabled = false;
+            document.getElementById('owner-farm-size').disabled = false;
+            document.getElementById('owner-mobile').disabled = false;
+            document.getElementById('owner-email').disabled = false;
+            document.getElementById('edit-owner-btn').style.display = 'none';
+            document.getElementById('save-owner-btn').style.display = 'inline-block';
+        }
+
+        async function saveOwnerDetails() {
+            document.getElementById('owner-details-message').style.display = 'none';
+            document.getElementById('owner-details-error').style.display = 'none';
+            const payload = {
+                id: document.getElementById('owner-id').value,
+                name: document.getElementById('owner-name').value,
+                address: document.getElementById('owner-address').value,
+                farm_size: document.getElementById('owner-farm-size').value,
+                mobile: document.getElementById('owner-mobile').value,
+                email: document.getElementById('owner-email').value
+            };
+            try {
+                const response = await fetch('/dashboard/owner_details', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('owner-details-message').textContent = 'Owner details updated successfully!';
+                    document.getElementById('owner-details-message').style.display = 'block';
+                    document.getElementById('owner-name').disabled = true;
+                    document.getElementById('owner-address').disabled = true;
+                    document.getElementById('owner-farm-size').disabled = true;
+                    document.getElementById('owner-mobile').disabled = true;
+                    document.getElementById('owner-email').disabled = true;
+                    document.getElementById('edit-owner-btn').style.display = 'inline-block';
+                    document.getElementById('save-owner-btn').style.display = 'none';
+                } else {
+                    document.getElementById('owner-details-error').textContent = data.message || 'Failed to update owner details.';
+                    document.getElementById('owner-details-error').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('owner-details-error').textContent = 'Error updating owner details.';
+                document.getElementById('owner-details-error').style.display = 'block';
+            }
+        }
+
         async function loadUserData() {
             try {
                 const response = await fetch('/user/manage', {
@@ -287,14 +459,12 @@
                         owner_id: '{{ owner_id }}'
                     })
                 });
-
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
                 const data = await response.json();
                 displayUserData(data);
-                
+                await loadOwnerDetails(); // Only load owner details from API
             } catch (error) {
                 console.error('Error fetching user data:', error);
                 document.getElementById('loading').style.display = 'none';

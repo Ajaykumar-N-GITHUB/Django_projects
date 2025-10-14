@@ -428,6 +428,48 @@ class AddAttendanceView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
+class OwnerDetailsView(APIView):
+    def get(self, request):
+        if not validate_user_permission(request, 'owner'):
+            return Response({"success": False, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        current_user = get_user_from_role_session(request, 'owner')
+        if current_user is None:
+            return Response({"success": False, "message": "Owner session not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        user_id = current_user.get('user_id')
+        try:
+            owner = Customer.objects.get(user_id=user_id, role='owner')
+            return Response({
+                "success": True,
+                "id": owner.user_id,
+                "name": owner.name,
+                "address": owner.address,
+                "farm_size": owner.farm_size,
+                "mobile": owner.phone_number,
+                "email": owner.email
+            }, status=status.HTTP_200_OK)
+        except Customer.DoesNotExist:
+            return Response({"success": False, "message": "Owner not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request):
+        if not validate_user_permission(request, 'owner'):
+            return Response({"success": False, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        current_user = get_user_from_role_session(request, 'owner')
+        if current_user is None:
+            return Response({"success": False, "message": "Owner session not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        user_id = current_user.get('user_id')
+        data = request.data
+        try:
+            owner = Customer.objects.get(user_id=user_id, role='owner')
+            owner.name = data.get('name', owner.name)
+            owner.address = data.get('address', owner.address)
+            owner.farm_size = data.get('farm_size', owner.farm_size)
+            owner.phone_number = data.get('mobile', owner.phone_number)
+            owner.email = data.get('email', owner.email)
+            owner.save()
+            return Response({"success": True, "message": "Owner details updated successfully!"}, status=status.HTTP_200_OK)
+        except Customer.DoesNotExist:
+            return Response({"success": False, "message": "Owner not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 class FetchAttendanceView(APIView):
 

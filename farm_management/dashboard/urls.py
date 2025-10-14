@@ -1,5 +1,5 @@
 from django.urls import path
-from dashboard.views import Dashboard, AddRecordView, GetRecordView, ProfitLossView, RemoveRecordView, UpdateRecordView, WorkerLongInputView, LogDownloadView, FetchWorkersView
+from dashboard.views import Dashboard, AddRecordView, GetRecordView, ProfitLossView, RemoveRecordView, UpdateRecordView, WorkerLongInputView, LogDownloadView, FetchWorkersView,OwnerDetailsView
 from dashboard.views import SetReminderView, PieBarView, FutureExpensesView,ReportDownloadView, WorkerDashboardView, AddWorkerView, RemoveWorkerView, FetchAttendanceView,AddAttendanceView
 from dashboard import views
 
@@ -23,5 +23,6 @@ urlpatterns = [
     path('fetch_attendance', FetchAttendanceView.as_view(), name='fetch_attendance'),
     path('fetch_workers', FetchWorkersView.as_view(), name='fetch_workers'),
     path('calculate_salary', views.calculate_salary, name='calculate_salary'),
+    path('owner_details', OwnerDetailsView.as_view(), name='owner_details'),
 
 ]

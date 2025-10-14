@@ -1,0 +1,242 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Tree Watering Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #eaf6f6 url('/static/first.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            position: relative;
+        }
+        .bg-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(46,139,87,0.15);
+            z-index: 0;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: rgba(255,255,255,0.7);
+            padding: 32px 24px 24px 24px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.18);
+            backdrop-filter: blur(8px);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        h2 {
+            text-align: center;
+            color: #2e8b57;
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin-bottom: 18px;
+            border: 1px solid #b2bec3;
+            border-radius: 8px;
+            font-size: 16px;
+            background: rgba(255,255,255,0.95);
+            transition: box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+            display: block;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #2e8b57;
+        }
+        .forgot-link {
+            display: block;
+            text-align: right;
+            margin-bottom: 18px;
+            color: #2196F3;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+            color: #1769aa;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #2e8b57 60%, #2196F3 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+            transition: background 0.2s, transform 0.2s;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #2196F3 40%, #2e8b57 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            .login-container {
+                max-width: 95vw;
+                margin: 30px auto;
+                padding: 18px 8px;
+                border-radius: 12px;
+            }
+            h2 {
+                font-size: 22px;
+                margin-bottom: 18px;
+            }
+            input[type="text"], input[type="password"] {
+                font-size: 15px;
+                padding: 10px;
+            }
+            button[type="submit"] {
+                font-size: 15px;
+                padding: 10px;
+            }
+        }
+        @media (max-width: 400px) {
+            .login-container {
+                padding: 8px 2px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form id="login-form" onsubmit="event.preventDefault(); loginUser();">
+            <div class="error-message" id="login-error"></div>
+            <label for="user_id">User ID</label>
+            <input type="text" id="user_id" name="user_id" required>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+            <a href="#" class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
+            <button type="submit">Login</button>
+            <div style="text-align:center; margin-top:14px;">
+                <a href="/user/signup" style="color:#2e8b57; text-decoration:underline; font-weight:600; font-size:15px;">
+                    New user? Sign up
+                </a>
+            </div>
+        </form>
+        <form id="forgot-form" style="display:none;" onsubmit="event.preventDefault(); forgotPassword();">
+            <div class="error-message" id="forgot-error"></div>
+            <label for="forgot_user_id">Enter User ID</label>
+            <input type="text" id="forgot_user_id" name="forgot_user_id" required>
+            <button type="submit">Reset Password</button>
+            <a href="#" class="forgot-link" onclick="hideForgotPassword()">Back to Login</a>
+        </form>
+    </div>
+    <script>
+        function showForgotPassword() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'block';
+            document.getElementById('login-error').style.display = 'none';
+        }
+        function hideForgotPassword() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('forgot-error').style.display = 'none';
+        }
+
+        // Dummy login API
+        async function loginUser() {
+            const user_id = document.getElementById('user_id').value;
+            const password = document.getElementById('password').value;
+            // Replace '/api/login/' with your real API
+            const response = await fetch('/api/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, password })
+            });
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/dashboard/';
+            } else {
+                document.getElementById('login-error').textContent = data.message || 'Invalid credentials';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        // Dummy forgot password API
+        async function forgotPassword() {
+            const user_id = document.getElementById('forgot_user_id').value;
+            // Replace '/api/forgot-password/' with your real API
+            const response = await fetch('/api/forgot-password/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id }) 
+            });
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('forgot-error').textContent = 'Password reset instructions sent!';
+            } else {
+                document.getElementById('forgot-error').textContent = data.message || 'User not found';
+            }
+            document.getElementById('forgot-error').style.display = 'block';
+        }
+
+        // Dummy sign up API
+        async function signupUser() {
+            // Example: get values from a sign up form (adjust IDs as needed)
+            const user_id = document.getElementById('signup_user_id').value;
+            const password = document.getElementById('signup_password').value;
+            // Add more fields as needed
+
+            // Replace '/api/signup/' with your real API endpoint
+            const response = await fetch('/api/signup/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, password })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Sign up successful! Please log in.');
+                window.location.href = '/user/login';
+            } else {
+                alert(data.message || 'Sign up failed');
+            }
+        }
+    </script>
+</body>
+</html>
